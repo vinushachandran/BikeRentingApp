@@ -1,14 +1,12 @@
-﻿using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using BikeRentingApp.Model.User;
+using Microsoft.EntityFrameworkCore;
 
 namespace BikeRentingApp.Data
 {
-    public class BIkeRentingAppDataContext:DbContext
+    public class BIkeRentingAppDataContext : DbContext
     {
         public BIkeRentingAppDataContext(DbContextOptions<BIkeRentingAppDataContext> options) : base(options) { }
+
+        public DbSet<UserBO> Users { get; set; }
     }
 }
