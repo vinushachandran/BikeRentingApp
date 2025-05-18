@@ -3,6 +3,8 @@ using System.ComponentModel.DataAnnotations;
 
 public class BikeViewModel
 {
+
+    public int BikeID { get; set; }
     [Required]
     public string BikeNumber { get; set; } = string.Empty;
 
@@ -21,5 +23,5 @@ public class BikeViewModel
     [Required]
     public int HostID { get; set; }
 
-    public IFormFile? ImageFile { get; set; } // ✅ File from form
+    public IFormFile? ImageFile { get; set; }
 }
