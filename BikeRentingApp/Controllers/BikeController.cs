@@ -45,16 +45,37 @@ namespace BikeRentingApp.API.Controllers
             }
         }
 
-        
+
         [HttpPost("add")]
-        public IActionResult AddBike([FromBody] BikeBO bike)
+        public IActionResult AddBike([FromForm] BikeViewModel bike)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
             try
             {
-                var result = _bikeRepository.AddBike(bike);
+                byte[]? imageData = null;
+                if (bike.ImageFile != null && bike.ImageFile.Length > 0)
+                {
+                    using (var ms = new MemoryStream())
+                    {
+                        bike.ImageFile.CopyTo(ms);
+                        imageData = ms.ToArray();
+                    }
+                }
+
+                var bikeBO = new BikeBO
+                {
+                    BikeNumber = bike.BikeNumber,
+                    Type = bike.Type,
+                    Address = bike.Address,
+                    RentalPrice = bike.RentalPrice,
+                    AvailabilityStatus = bike.AvailabilityStatus,
+                    HostID = bike.HostID,
+                    Image = imageData 
+                };
+
+                var result = _bikeRepository.AddBike(bikeBO);
                 return result.Success ? Ok(result) : BadRequest(result);
             }
             catch (Exception ex)
@@ -63,7 +84,8 @@ namespace BikeRentingApp.API.Controllers
             }
         }
 
-        
+
+
         [HttpPut("update")]
         public IActionResult UpdateBike([FromBody] BikeBO bike)
         {

@@ -76,26 +76,15 @@ namespace BikeRentingApp.BL
             var response = new RepositoryResponse<bool>();
             try
             {
-                // Example uniqueness check: check if BikeNumber is already used
                 var existingBike = _context.Bike.FirstOrDefault(b => b.BikeNumber == bikeBO.BikeNumber);
                 if (existingBike != null)
                 {
-                    response.Message.Add($"The bike number '{bikeBO.BikeNumber}' is already in use. Please try a different bike number.");
+                    response.Message.Add($"The bike number '{bikeBO.BikeNumber}' is already in use.");
                     response.Success = false;
                     return response;
                 }
 
-                var bikeEntity = new BikeBO()
-                {
-                    Type = bikeBO.Type,
-                    RentalPrice = bikeBO.RentalPrice,
-                    Address = bikeBO.Address,
-                    AvailabilityStatus = bikeBO.AvailabilityStatus,
-                    HostID = bikeBO.HostID,
-                    BikeNumber = bikeBO.BikeNumber
-                };
-
-                _context.Bike.Add(bikeEntity);
+                _context.Bike.Add(bikeBO);
                 _context.SaveChanges();
 
                 response.Data = true;
@@ -105,10 +94,11 @@ namespace BikeRentingApp.BL
             catch (Exception ex)
             {
                 response.Success = false;
-                response.Message.Add($"An error occurred while adding the bike: {ex.Message}");
+                response.Message.Add($"Error adding bike: {ex.Message}");
                 return response;
             }
         }
+
 
 
 
@@ -130,6 +120,7 @@ namespace BikeRentingApp.BL
                 existing.AvailabilityStatus = bike.AvailabilityStatus;
                 existing.HostID = bike.HostID;
                 existing.BikeNumber = bike.BikeNumber;
+                existing.Image = bike.Image;
 
                 _context.SaveChanges();
                 response.Data = "Bike updated successfully.";
