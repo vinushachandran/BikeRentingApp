@@ -103,6 +103,16 @@ namespace BikeRentingApp.BL.User
                     }
                 }
 
+                if (imageData == null)
+                {
+                    imageData = existingUser.LicenseImage;
+                }
+
+                if (user.Password != null)
+                {
+                    existingUser.PasswordHash = PasswordHelper.HashPassword(user.Password);
+                }
+
                 existingUser.Username = user.Username;
                 existingUser.Email = user.Email;
                 existingUser.PhoneNumber = user.PhoneNumber;

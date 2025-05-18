@@ -127,7 +127,6 @@ const RentBikePage = () => {
     formData.append("Password", user.password);
     formData.append("UserId", user.userId);
     try {
-      console.log(user);
       const response = await fetch(`https://localhost:7176/api/user/update`, {
         method: "PUT",
         body: formData,
