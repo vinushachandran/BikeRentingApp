@@ -1,6 +1,7 @@
 ﻿using BikeRentingApp.BL.User;
 using BikeRentingApp.Data;
 using BikeRentingApp.Model.User;
+using BikeRentingApp.ViewModel.UserViewModel;
 using BTBS.ViewModel.RepositoryResponse;
 using Microsoft.AspNetCore.Mvc;
 
@@ -78,16 +79,16 @@ namespace BikeRentingApp.Controllers
             return Ok(response);
         }
 
-        [HttpPut("{id}")]
-        public ActionResult<RepositoryResponse<UserBO>> Update(int id, [FromBody] UserBO user)
+        [HttpPut("update")]
+        public ActionResult<RepositoryResponse<UserBO>> Update([FromForm] UserUpdateModel user)
         {
             var response = new RepositoryResponse<UserBO>();
             try
             {
-                if (id != user.UserId)
+                if (user.UserId == null)
                 {
                     response.Success = false;
-                    response.Message.Add("User ID mismatch.");
+                    response.Message.Add("User ID is null.");
                     return BadRequest(response);
                 }
 

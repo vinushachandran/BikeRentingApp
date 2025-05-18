@@ -1,5 +1,6 @@
 ﻿using BikeRentingApp.Data;
 using BikeRentingApp.Model.User;
+using BikeRentingApp.ViewModel.UserViewModel;
 using BTBS.ViewModel.RepositoryResponse;
 
 namespace BikeRentingApp.BL.User
@@ -79,7 +80,7 @@ namespace BikeRentingApp.BL.User
         }
 
         // Update 
-        public RepositoryResponse<UserBO> UpdateUser(UserBO user)
+        public RepositoryResponse<UserBO> UpdateUser(UserUpdateModel user)
         {
             var response = new RepositoryResponse<UserBO>();
             try
@@ -92,10 +93,21 @@ namespace BikeRentingApp.BL.User
                     return response;
                 }
 
+                byte[]? imageData = null;
+                if (user.LicenseImageFile != null && user.LicenseImageFile.Length > 0)
+                {
+                    using (var ms = new MemoryStream())
+                    {
+                        user.LicenseImageFile.CopyTo(ms);
+                        imageData = ms.ToArray();
+                    }
+                }
+
                 existingUser.Username = user.Username;
                 existingUser.Email = user.Email;
                 existingUser.PhoneNumber = user.PhoneNumber;
                 existingUser.Role = user.Role;
+                existingUser.LicenseImage = imageData;
 
                 _dbContext.SaveChanges();
 

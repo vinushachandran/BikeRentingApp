@@ -3,6 +3,7 @@ import DashboardNavbar from "../components/DashboardNavbar";
 import BikeCard from "../components/BikeCard";
 import ReturnBikeModal from "../components/ReturnBikeModal";
 import axios from "axios";
+import Swal from "sweetalert2";
 
 const RentBikePage = () => {
   const [selectedLocation, setSelectedLocation] = useState("All");
@@ -90,10 +91,158 @@ const RentBikePage = () => {
   const bikesToDisplay = returnMode ? rentedBikes : filteredBikes;
   const uniqueLocations = ["All", ...new Set(bikes.map((b) => b.location))];
 
+  const [licenseFile, setLicenseFile] = useState(null);
+  const [licensePreviewUrl, setLicensePreviewUrl] = useState(null);
+  const [licenseError, setLicenseError] = useState("");
+  const [showModal, setShowModal] = useState(false);
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setLicenseFile(file);
+      setLicensePreviewUrl(URL.createObjectURL(file));
+      setLicenseError("");
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!licenseFile) {
+      Swal.fire({
+        icon: "warning",
+        title: "No File Selected",
+        text: "Please select a license image before uploading.",
+      });
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("LicenseImageFile", licenseFile);
+    formData.append("Username", user.username);
+    formData.append("Email", user.email);
+    formData.append("Role", user.role);
+    formData.append("PhoneNumber", user.phoneNumber);
+    formData.append("LicenseVerified", user.licenseVerified);
+    formData.append("Password", user.password);
+    formData.append("UserId", user.userId);
+    try {
+      console.log(user);
+      const response = await fetch(`https://localhost:7176/api/user/update`, {
+        method: "PUT",
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setLicenseFile(null);
+        Swal.fire({
+          icon: "success",
+          title: "Uploaded!",
+          text: "License uploaded successfully.",
+          confirmButtonColor: "#8B5CF6",
+        });
+        setShowModal(false);
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Upload Failed",
+          text: result.message || "Something went wrong.",
+        });
+      }
+    } catch (error) {
+      console.error("Upload error", error);
+      Swal.fire({
+        icon: "error",
+        title: "Upload Error",
+        text: "An unexpected error occurred during upload.",
+      });
+    }
+  };
+
   return (
     <div>
       <DashboardNavbar name={"Renter"} />
       <div className="p-4 my-4 max-w-6xl mx-auto">
+        <div className="flex justify-end my-2">
+          {!user.licenseImage && (
+            <>
+              <button
+                className="bg-purple-500 p-2 rounded-lg text-white"
+                onClick={() => setShowModal(true)}
+              >
+                Add licence
+              </button>
+            </>
+          )}
+
+          {showModal && (
+            <div className="fixed inset-0 bg-white/30 backdrop-blur-sm flex justify-center items-center z-50 border">
+              <div className="bg-white p-6 rounded-lg w-full max-w-md relative border">
+                <button
+                  className="absolute top-2 right-2 text-gray-600 text-xl hover:text-red-600"
+                  onClick={() => setShowModal(false)}
+                >
+                  &times;
+                </button>
+                <h2 className="text-lg font-semibold mb-4">
+                  Upload Your License
+                </h2>
+                <form onSubmit={handleSubmit}>
+                  <div className="mb-4">
+                    <label
+                      htmlFor="licenseUpload"
+                      className={`block w-full bg-gray-200 text-gray-700 py-2 px-4 text-center rounded cursor-pointer hover:bg-gray-300 ${
+                        licenseError ? "border border-red-500" : ""
+                      }`}
+                    >
+                      {licenseFile
+                        ? "Change License Image"
+                        : "Choose License Image"}
+                    </label>
+                    <input
+                      id="licenseUpload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                    {licenseError && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {licenseError}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Image Preview */}
+                  {licensePreviewUrl && (
+                    <img
+                      src={licensePreviewUrl}
+                      alt="License Preview"
+                      className="w-full h-40 object-fill rounded-md mb-4"
+                    />
+                  )}
+                  <div className="flex justify-end space-x-2">
+                    <button
+                      type="button"
+                      className="bg-gray-400 text-white px-4 py-2 rounded"
+                      onClick={() => setShowModal(false)}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="bg-purple-600 text-white px-4 py-2 rounded"
+                    >
+                      Upload
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+        </div>
         <div className="flex justify-between items-center mb-4">
           {!returnMode ? (
             <>
