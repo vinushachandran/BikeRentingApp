@@ -15,4 +15,8 @@
     <ProjectReference Include="..\BikeRentingApp.Model\BikeRentingApp.Model.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Bike\" />
+  </ItemGroup>
+
 </Project>
