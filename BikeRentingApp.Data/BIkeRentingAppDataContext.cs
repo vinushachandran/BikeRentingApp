@@ -8,11 +8,14 @@ namespace BikeRentingApp.Data
     {
         public BIkeRentingAppDataContext(DbContextOptions<BIkeRentingAppDataContext> options) : base(options) { }
 
-        public DbSet<UserBO> Users { get; set; }
+        public DbSet<UserBO> User { get; set; }
 
         public DbSet<BikeBO> Bike { get; set; }
 
         public DbSet<BookingBO> Booking { get; set; }
+
+        public DbSet<ReviewBO> Reviews { get; set; }
+
 
     }
 }
