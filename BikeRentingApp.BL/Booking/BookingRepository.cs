@@ -1,4 +1,5 @@
-﻿using BikeRentingApp.Data;
+﻿using BikeRentingApp.BL.User;
+using BikeRentingApp.Data;
 using BikeRentingApp.Model;
 using BTBS.ViewModel.RepositoryResponse;
 
@@ -8,9 +9,12 @@ namespace BikeRentingApp.BL
     {
         private readonly BIkeRentingAppDataContext _context;
 
-        public BookingRepository(BIkeRentingAppDataContext context)
+        private UserRepository userRepository;
+
+        public BookingRepository(BIkeRentingAppDataContext context, UserRepository userRepository)
         {
             _context = context;
+            this.userRepository = userRepository;
         }
 
         public RepositoryResponse<IEnumerable<BookingBO>> GetAllBookings()
@@ -57,7 +61,20 @@ namespace BikeRentingApp.BL
             var response = new RepositoryResponse<bool>();
             try
             {
-                // ✅ Check if bike exists
+                if (userRepository.GetUserById(booking.CustomerID).Data.LicenseImage == null)
+                {
+                    response.Success = false;
+                    response.Message.Add("Please upload your licence.");
+                    return response;
+                }
+
+                if (userRepository.GetUserById(booking.CustomerID).Data.LicenseVerified == false)
+                {
+                    response.Success = false;
+                    response.Message.Add("Please wait your licence not verified.");
+                    return response;
+                }
+
                 var bikeExists = _context.Bike.Any(b => b.BikeID == booking.BikeID);
                 if (!bikeExists)
                 {

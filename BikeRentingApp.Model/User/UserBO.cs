@@ -20,5 +20,9 @@ namespace BikeRentingApp.Model.User
 
         public string PhoneNumber { get; set; }
 
+        public byte[]? LicenseImage { get; set; }
+
+        public bool LicenseVerified { get; set; } = false;
+
     }
 }
