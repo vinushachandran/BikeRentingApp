@@ -2,20 +2,18 @@ import Swal from "sweetalert2";
 import React, { useState } from "react";
 import InputField from "../components/common/InputField";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const SignUpPage = () => {
   const [termCondition, setTermCondition] = useState(false);
   const navigate = useNavigate();
 
-  const handleNavigation = (path) => {
-    navigate(path);
-  };
-
   const [formData, setFormData] = useState({
-    fullName: "",
+    username: "",
     email: "",
     password: "",
     confirmPassword: "",
+    phoneNumber: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -25,11 +23,11 @@ const SignUpPage = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const newErrors = {};
 
-    if (!formData.fullName) newErrors.fullName = "Full name is required";
+    if (!formData.username) newErrors.username = "Full name is required";
     if (!formData.email) newErrors.email = "Email is required";
     if (!formData.password) newErrors.password = "Password is required";
     if (formData.password !== formData.confirmPassword)
@@ -48,7 +46,46 @@ const SignUpPage = () => {
         return;
       }
 
-      console.log("Signup submitted", formData);
+      const userPayload = {
+        username: formData.username,
+        email: formData.email,
+        passwordHash: formData.password,
+        phoneNumber: formData.phoneNumber,
+        role: "User",
+      };
+
+      try {
+        const response = await axios.post(
+          "https://localhost:7176/api/User",
+          userPayload
+        );
+
+        if (response.data.success) {
+          Swal.fire({
+            icon: "success",
+            title: "Account Created",
+            text: "Your account has been created successfully!",
+            confirmButtonColor: "#3085d6",
+          }).then(() => {
+            navigate("/login");
+          });
+        } else {
+          Swal.fire({
+            icon: "error",
+            title: "Sign Up Failed",
+            text: response.data.message.join(", "),
+            confirmButtonColor: "#d33",
+          });
+        }
+      } catch (error) {
+        Swal.fire({
+          icon: "error",
+          title: "Server Error",
+          text:
+            error.response?.data?.message?.join(", ") ||
+            "Something went wrong!",
+        });
+      }
     }
   };
 
@@ -56,19 +93,19 @@ const SignUpPage = () => {
     <div className="flex justify-center items-center min-h-[100vh] ">
       <form
         onSubmit={handleSubmit}
-        className="min-w-md mx-auto px- p-6 bg-white rounded-md shadow-2xl border border-gray-200"
+        className="min-w-md mx-auto px-6 p-6 bg-white rounded-md shadow-2xl border border-gray-200"
       >
         <div className="text-center text-2xl font-semibold uppercase py-3">
           Create Account
         </div>
 
         <InputField
-          label="Full Name"
-          name="fullName"
-          value={formData.fullName}
+          label="Username"
+          name="username"
+          value={formData.username}
           onChange={handleChange}
-          placeholder="Enter your full name"
-          error={errors.fullName}
+          placeholder="Enter your username"
+          error={errors.username}
         />
 
         <InputField
@@ -79,6 +116,14 @@ const SignUpPage = () => {
           onChange={handleChange}
           placeholder="Enter your email"
           error={errors.email}
+        />
+
+        <InputField
+          label="Phone Number"
+          name="phoneNumber"
+          value={formData.phoneNumber}
+          onChange={handleChange}
+          placeholder="Enter your phone number"
         />
 
         <InputField
@@ -124,7 +169,7 @@ const SignUpPage = () => {
           Already have an account?
           <span
             className="text-blue-600 ml-1 cursor-pointer"
-            onClick={() => handleNavigation("/login")}
+            onClick={() => navigate("/login")}
           >
             Login
           </span>

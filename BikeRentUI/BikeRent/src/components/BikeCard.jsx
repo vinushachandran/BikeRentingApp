@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-const BikeCard = ({ bike, returnMode, onReturnClick }) => {
+const BikeCard = ({ bike, returnMode, onReturnClick, host }) => {
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({ name: "", days: "" });
 
@@ -31,24 +31,35 @@ const BikeCard = ({ bike, returnMode, onReturnClick }) => {
         <h3 className="text-xl font-semibold">{bike.name}</h3>
         <p className="text-sm text-gray-600">Location: {bike.location}</p>
         <p className="text-sm text-gray-600">Rent: ${bike.rent}/day</p>
-        {!returnMode && (
+        {host ? (
           <button
-            className="mt-2 bg-blue-600 text-white px-4 py-2 rounded w-full"
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowModal(true);
-            }}
-          >
-            Rent Now
-          </button>
-        )}
-        {returnMode && (
-          <button
-            className="mt-2 bg-blue-600 text-white px-4 py-2 rounded w-full"
+            className="mt-2 bg-red-600 text-white px-4 py-2 rounded w-full"
             onClick={() => returnMode && onReturnClick?.(bike)}
           >
-            Return Bike
+            Delete Bike
           </button>
+        ) : (
+          <>
+            {!returnMode && (
+              <button
+                className="mt-2 bg-blue-600 text-white px-4 py-2 rounded w-full"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowModal(true);
+                }}
+              >
+                Rent Now
+              </button>
+            )}
+            {returnMode && (
+              <button
+                className="mt-2 bg-blue-600 text-white px-4 py-2 rounded w-full"
+                onClick={() => returnMode && onReturnClick?.(bike)}
+              >
+                Return Bike
+              </button>
+            )}
+          </>
         )}
       </div>
 

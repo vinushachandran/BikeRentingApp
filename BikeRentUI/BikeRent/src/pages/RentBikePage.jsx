@@ -33,6 +33,8 @@ const RentBikePage = () => {
   const [returnMode, setReturnMode] = useState(false);
   const [selectedReturnBike, setSelectedReturnBike] = useState(null);
 
+  const user = JSON.parse(localStorage.getItem("user"));
+
   const filteredBikes =
     selectedLocation === "All"
       ? bikesData
@@ -40,7 +42,7 @@ const RentBikePage = () => {
 
   const handleReturnToggle = () => {
     setReturnMode((prev) => !prev);
-    setSelectedReturnBike(null); // Reset selection on toggle
+    setSelectedReturnBike(null);
   };
 
   const handleBikeReturnClick = (bike) => {
