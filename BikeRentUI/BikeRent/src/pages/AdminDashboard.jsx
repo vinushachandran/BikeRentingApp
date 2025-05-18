@@ -9,38 +9,19 @@ import axios from "axios";
 
 const MySwal = withReactContent(Swal);
 
-const bikes = [
-  { id: 1, name: "Mountain Bike", location: "New York", rent: 15 },
-  { id: 2, name: "Road Bike", location: "Los Angeles", rent: 20 },
-];
-
-const reviews = [
-  {
-    id: 1,
-    user: "Alice",
-    bike: "Mountain Bike",
-    rating: 4,
-    comment: "Great ride!",
-  },
-  {
-    id: 2,
-    user: "Bob",
-    bike: "Road Bike",
-    rating: 5,
-    comment: "Very smooth and fast!",
-  },
-];
-
 const AdminDashboard = () => {
   const [users, setUsers] = useState([]);
   const [activeTab, setActiveTab] = useState("Users");
+  const [bikes, setBikes] = useState([]);
+  const [reviews, setReviews] = useState([]);
 
   const user = JSON.parse(localStorage.getItem("user"));
 
   useEffect(() => {
     console.log("useEffect triggered");
-
     fetchUsers();
+    fetchBikes();
+    fetchReviews();
   }, []);
 
   const fetchUsers = async () => {
@@ -51,6 +32,30 @@ const AdminDashboard = () => {
       }
     } catch (error) {
       console.error("Caught error:", error.message);
+    }
+  };
+
+  const fetchBikes = async () => {
+    try {
+      const response = await axios.get("https://localhost:7176/api/bikes");
+      if (response.data.success) {
+        setBikes(response.data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching bikes:", error);
+    }
+  };
+
+  const fetchReviews = async () => {
+    try {
+      const response = await axios.get(
+        "https://localhost:7176/api/Review/getAllReviews"
+      );
+      if (response.data.success) {
+        setReviews(response.data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
     }
   };
 
@@ -186,17 +191,26 @@ const AdminDashboard = () => {
                 <table className="min-w-full text-sm text-left text-gray-600">
                   <thead className="text-md uppercase bg-green-600 text-white">
                     <tr>
+                      {/* <th className="px-6 py-4 font-semibold tracking-wider">
+                        Bike ID
+                      </th> */}
                       <th className="px-6 py-4 font-semibold tracking-wider">
-                        ID
+                        Bike Number
                       </th>
                       <th className="px-6 py-4 font-semibold tracking-wider">
-                        Name
+                        Type
                       </th>
                       <th className="px-6 py-4 font-semibold tracking-wider">
-                        Location
+                        Address
                       </th>
                       <th className="px-6 py-4 font-semibold tracking-wider">
-                        Rent
+                        Rental Price
+                      </th>
+                      <th className="px-6 py-4 font-semibold tracking-wider">
+                        Host Name
+                      </th>
+                      <th className="px-6 py-4 font-semibold tracking-wider">
+                        Available
                       </th>
                       <th className="px-6 py-4 font-semibold tracking-wider text-center">
                         Actions
@@ -204,39 +218,53 @@ const AdminDashboard = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {bikes.map((bike, index) => (
-                      <tr
-                        key={bike.id}
-                        className={
-                          index % 2 === 0
-                            ? "bg-white"
-                            : "bg-gray-50 hover:bg-gray-100 transition"
-                        }
-                      >
-                        <td className="px-6 py-4">{bike.id}</td>
-                        <td className="px-6 py-4">{bike.name}</td>
-                        <td className="px-6 py-4">{bike.location}</td>
-                        <td className="px-6 py-4">${bike.rent}</td>
-                        <td className="px-6 py-4 text-center">
-                          <div className="flex justify-center items-center space-x-4">
-                            <button
-                              onClick={() => handleEdit("Bike", bike.id)}
-                              className="text-blue-600 hover:text-blue-800 transition"
-                              title="Edit"
-                            >
-                              <FaEdit />
-                            </button>
-                            <button
-                              onClick={() => handleDelete("Bike", bike.id)}
-                              className="text-red-600 hover:text-red-800 transition"
-                              title="Delete"
-                            >
-                              <FaTrash />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                    {bikes.map((bike, index) => {
+                      const hostUser = users.find(
+                        (u) => u.userId === bike.hostID
+                      );
+                      console.log("Bike:", bike, "Host User:", hostUser);
+                      return (
+                        <tr
+                          key={bike.bikeID}
+                          className={
+                            index % 2 === 0
+                              ? "bg-white"
+                              : "bg-gray-50 hover:bg-gray-100 transition"
+                          }
+                        >
+                          <td className="px-6 py-4">{bike.bikeNumber}</td>
+                          <td className="px-6 py-4">{bike.type}</td>
+                          <td className="px-6 py-4">{bike.address}</td>
+                          <td className="px-6 py-4">${bike.rentalPrice}</td>
+                          <td className="px-6 py-4">
+                            {hostUser ? hostUser.username : "Unknown"}
+                          </td>
+                          <td className="px-6 py-4">
+                            {bike.availabilityStatus ? "Yes" : "No"}
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            <div className="flex justify-center items-center space-x-4">
+                              <button
+                                onClick={() => handleEdit("Bike", bike.bikeID)}
+                                className="text-blue-600 hover:text-blue-800 transition"
+                                title="Edit"
+                              >
+                                <FaEdit />
+                              </button>
+                              <button
+                                onClick={() =>
+                                  handleDelete("Bike", bike.bikeID)
+                                }
+                                className="text-red-600 hover:text-red-800 transition"
+                                title="Delete"
+                              >
+                                <FaTrash />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -263,13 +291,10 @@ const AdminDashboard = () => {
                   <thead className="text-md uppercase bg-green-600 text-white">
                     <tr>
                       <th className="px-6 py-3 font-semibold tracking-wider">
-                        ID
-                      </th>
-                      <th className="px-6 py-3 font-semibold tracking-wider">
                         User
                       </th>
                       <th className="px-6 py-3 font-semibold tracking-wider">
-                        Bike
+                        Bike Number
                       </th>
                       <th className="px-6 py-3 font-semibold tracking-wider">
                         Rating
@@ -277,46 +302,36 @@ const AdminDashboard = () => {
                       <th className="px-6 py-3 font-semibold tracking-wider">
                         Comment
                       </th>
-                      <th className="px-6 py-3 font-semibold tracking-wider text-center">
-                        Actions
-                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {reviews.map((review, index) => (
-                      <tr
-                        key={review.id}
-                        className={
-                          index % 2 === 0
-                            ? "bg-white"
-                            : "bg-gray-50 hover:bg-gray-100 transition"
-                        }
-                      >
-                        <td className="px-6 py-4">{review.id}</td>
-                        <td className="px-6 py-4">{review.user}</td>
-                        <td className="px-6 py-4">{review.bike}</td>
-                        <td className="px-6 py-4">{review.rating}</td>
-                        <td className="px-6 py-4">{review.comment}</td>
-                        <td className="px-6 py-4 text-center">
-                          <div className="flex justify-center items-center space-x-4">
-                            <button
-                              onClick={() => handleEdit("Review", review.id)}
-                              className="text-blue-600 hover:text-blue-800 transition"
-                              title="Edit"
-                            >
-                              <FaEdit />
-                            </button>
-                            <button
-                              onClick={() => handleDelete("Review", review.id)}
-                              className="text-red-600 hover:text-red-800 transition"
-                              title="Delete"
-                            >
-                              <FaTrash />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                    {reviews.map((review, index) => {
+                      const customer = users.find(
+                        (u) => u.userId === review.customerID
+                      );
+                      const bike = bikes.find(
+                        (b) => b.bikeID === review.bikeID
+                      );
+                      return (
+                        <tr
+                          key={review.id}
+                          className={
+                            index % 2 === 0
+                              ? "bg-white"
+                              : "bg-gray-50 hover:bg-gray-100 transition"
+                          }
+                        >
+                          <td className="px-6 py-4">
+                            {customer ? customer.username : "UnknownUser"}
+                          </td>
+                          <td className="px-6 py-4">
+                            {bike ? bike.bikeNumber : "UnknownUser"}
+                          </td>
+                          <td className="px-6 py-4">{review.rating}</td>
+                          <td className="px-6 py-4">{review.comment}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
