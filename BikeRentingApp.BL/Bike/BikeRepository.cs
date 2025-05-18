@@ -1,7 +1,6 @@
 ﻿using BikeRentingApp.Data;
 using BikeRentingApp.Model;
 using BTBS.ViewModel.RepositoryResponse;
-using Microsoft.EntityFrameworkCore;
 
 namespace BikeRentingApp.BL
 {
@@ -9,9 +8,12 @@ namespace BikeRentingApp.BL
     {
         private readonly BIkeRentingAppDataContext _context;
 
-        public BikeRepository(BIkeRentingAppDataContext context)
+        private BookingRepository bookingRepository;
+
+        public BikeRepository(BIkeRentingAppDataContext context, BookingRepository bookingRepository)
         {
             _context = context;
+            this.bookingRepository = bookingRepository;
         }
 
         public RepositoryResponse<IEnumerable<BikeBO>> GetAllBikes()
@@ -22,12 +24,14 @@ namespace BikeRentingApp.BL
                 response.Data = _context.Bike.Select(b => new BikeBO
                 {
                     BikeID = b.BikeID,
-                    Type = b.Type,                    
+                    Type = b.Type,
                     RentalPrice = b.RentalPrice,
                     Address = b.Address,
                     AvailabilityStatus = b.AvailabilityStatus,
                     HostID = b.HostID,
-                    BikeNumber = b.BikeNumber
+                    BikeNumber = b.BikeNumber,
+                    Image = b.Image
+
                 }).ToList();
             }
             catch (Exception ex)
@@ -54,12 +58,13 @@ namespace BikeRentingApp.BL
                     response.Data = new BikeBO
                     {
                         BikeID = bike.BikeID,
-                        Type = bike.Type,                       
+                        Type = bike.Type,
                         RentalPrice = bike.RentalPrice,
                         Address = bike.Address,
                         AvailabilityStatus = bike.AvailabilityStatus,
                         HostID = bike.HostID,
-                        BikeNumber = bike.BikeNumber
+                        BikeNumber = bike.BikeNumber,
+                        Image = bike.Image
                     };
                 }
             }
@@ -102,7 +107,7 @@ namespace BikeRentingApp.BL
 
 
 
-        public RepositoryResponse<string> UpdateBike(BikeBO bike)
+        public RepositoryResponse<string> UpdateBike(BikeViewModel bike)
         {
             var response = new RepositoryResponse<string>();
             try
@@ -115,12 +120,21 @@ namespace BikeRentingApp.BL
                     return response;
                 }
 
-                existing.Type = bike.Type;                
+                existing.Type = bike.Type;
                 existing.RentalPrice = bike.RentalPrice;
                 existing.AvailabilityStatus = bike.AvailabilityStatus;
                 existing.HostID = bike.HostID;
                 existing.BikeNumber = bike.BikeNumber;
-                existing.Image = bike.Image;
+                if (bike.ImageFile != null && bike.ImageFile.Length > 0)
+                {
+                    using (var memoryStream = new MemoryStream())
+                    {
+                        bike.ImageFile.CopyTo(memoryStream);
+                        existing.Image = memoryStream.ToArray();
+                    }
+                }
+
+
 
                 _context.SaveChanges();
                 response.Data = "Bike updated successfully.";
@@ -146,6 +160,20 @@ namespace BikeRentingApp.BL
                 }
                 else
                 {
+                    var bookingResponse = bookingRepository.GetAllBookings();
+
+                    if (bookingResponse.Success)
+                    {
+                        var hasPendingBookings = bookingResponse.Data
+                            .Any(b => b.BikeID == id && b.Status == "Pending");
+
+                        if (hasPendingBookings)
+                        {
+                            response.Success = false;
+                            response.Message.Add("Cannot delete: This bike has pending bookings.");
+                            return response;
+                        }
+                    }
                     _context.Bike.Remove(bike);
                     _context.SaveChanges();
                     response.Data = "Bike deleted successfully.";

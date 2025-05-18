@@ -16,8 +16,10 @@
   <ItemGroup>
     <ProjectReference Include="..\BikeRentingApp.BL\BikeRentingApp.BL.csproj" />
     <ProjectReference Include="..\BikeRentingApp.Data\BikeRentingApp.Data.csproj" />
-    <ProjectReference Include="..\BikeRentingApp.Model\BikeRentingApp.Model.csproj" />
-    <ProjectReference Include="..\BikeRentingApp.ViewModel\BikeRentingApp.ViewModel.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Controllers\" />
   </ItemGroup>
 
 </Project>

@@ -25,11 +25,14 @@ const DashboardNavbar = ({ name }) => {
           Local Voyage Srilanka {name === "Admin" && <>- Admin</>}
         </div>
 
-        <div className="space-x-4 flex items-center">
+        <div className="space-x-4 flex items-center text-white cursor-pointer">
+          <div className="" onClick={() => handleNavigation("/")}>
+            Home
+          </div>
           {name != "Admin" && (
             <>
               <div className="w-[30px] h-[30px] rounded-full bg-white flex justify-center items-center text-black font-bold">
-                {user.username?.charAt(0).uppercase || "U"}
+                {user.username?.charAt(0).toUpperCase() || "U"}
               </div>
               <div className="text-white">{user.username}</div>
             </>

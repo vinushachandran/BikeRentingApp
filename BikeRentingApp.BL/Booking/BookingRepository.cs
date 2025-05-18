@@ -116,7 +116,7 @@ namespace BikeRentingApp.BL
                     response.Message.Add("Booking not found.");
                     return response;
                 }
-                                
+
                 var bikeExists = _context.Bike.Any(b => b.BikeID == booking.BikeID);
                 if (!bikeExists)
                 {
@@ -135,11 +135,12 @@ namespace BikeRentingApp.BL
                     response.Message.Add("The bike is already booked for the selected date range.");
                     return response;
                 }
-                
+
                 existing.CustomerID = booking.CustomerID;
                 existing.BikeID = booking.BikeID;
                 existing.StartDate = booking.StartDate;
-                existing.EndDate = booking.EndDate;                 
+                existing.EndDate = booking.EndDate;
+                existing.Status = booking.Status;
 
                 _context.SaveChanges();
                 response.Data = true;

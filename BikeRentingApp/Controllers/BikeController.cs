@@ -15,7 +15,7 @@ namespace BikeRentingApp.API.Controllers
             _bikeRepository = bikeRepository;
         }
 
-       
+
         [HttpGet]
         public IActionResult GetAllBikes()
         {
@@ -30,7 +30,7 @@ namespace BikeRentingApp.API.Controllers
             }
         }
 
-        
+
         [HttpGet("{id}")]
         public IActionResult GetBikeById(int id)
         {
@@ -72,7 +72,7 @@ namespace BikeRentingApp.API.Controllers
                     RentalPrice = bike.RentalPrice,
                     AvailabilityStatus = bike.AvailabilityStatus,
                     HostID = bike.HostID,
-                    Image = imageData 
+                    Image = imageData
                 };
 
                 var result = _bikeRepository.AddBike(bikeBO);
@@ -87,7 +87,7 @@ namespace BikeRentingApp.API.Controllers
 
 
         [HttpPut("update")]
-        public IActionResult UpdateBike([FromBody] BikeBO bike)
+        public IActionResult UpdateBike([FromForm] BikeViewModel bike)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -103,7 +103,7 @@ namespace BikeRentingApp.API.Controllers
             }
         }
 
-        
+
         [HttpDelete("delete/{id}")]
         public IActionResult DeleteBike(int id)
         {
