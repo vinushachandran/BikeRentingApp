@@ -30,5 +30,7 @@ namespace BikeRentingApp.Model
         [Required(ErrorMessage = "Host ID is required")]
         [Display(Name = "Host ID")]
         public int HostID { get; set; }
+
+        public byte[]? Image { get; set; }
     }
 }
