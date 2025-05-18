@@ -173,6 +173,16 @@ namespace BikeRentingApp.BL
                             response.Message.Add("Cannot delete: This bike has pending bookings.");
                             return response;
                         }
+
+                        var hasAnyBookings = bookingResponse.Data.Any(b => b.BikeID == id);
+
+                        if (hasAnyBookings)
+                        {
+                            response.Success = false;
+                            response.Message.Add("Cannot delete: This bike has existing bookings.");
+                            return response;
+                        }
+
                     }
                     _context.Bike.Remove(bike);
                     _context.SaveChanges();
