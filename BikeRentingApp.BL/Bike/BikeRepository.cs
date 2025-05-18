@@ -8,7 +8,7 @@ namespace BikeRentingApp.BL
     {
         private readonly BIkeRentingAppDataContext _context;
 
-        private BookingRepository bookingRepository;
+        private readonly BookingRepository bookingRepository;
 
         public BikeRepository(BIkeRentingAppDataContext context, BookingRepository bookingRepository)
         {

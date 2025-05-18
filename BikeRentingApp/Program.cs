@@ -1,3 +1,5 @@
+using BikeRentingApp.BL;
+using BikeRentingApp.BL.User;
 using BikeRentingApp.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -20,6 +22,11 @@ builder.Services.AddCors(options =>
                           .AllowAnyHeader()
                           .AllowAnyMethod());
 });
+
+builder.Services.AddScoped<BikeRepository>();
+builder.Services.AddScoped<ReviewRepository>();
+builder.Services.AddScoped<BookingRepository>();
+builder.Services.AddScoped<UserRepository>();
 
 var app = builder.Build();
 

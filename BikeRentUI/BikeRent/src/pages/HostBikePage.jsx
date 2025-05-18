@@ -283,7 +283,7 @@ const HostBikePage = () => {
                     <input
                       type="number"
                       name="rentalPrice"
-                      placeholder="Rental Price ($)"
+                      placeholder="Rental Price (Rs)"
                       value={bikeData.rentalPrice}
                       onChange={handleChange}
                       className={`${inputBase} ${

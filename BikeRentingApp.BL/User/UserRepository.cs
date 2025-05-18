@@ -12,6 +12,7 @@ namespace BikeRentingApp.BL.User
         public UserRepository(BIkeRentingAppDataContext dbContext)
         {
             _dbContext = dbContext;
+
         }
 
         // Create
@@ -146,6 +147,24 @@ namespace BikeRentingApp.BL.User
                     response.Message.Add("User not found.");
                     return response;
                 }
+                bool hasPendingBookings = _dbContext.Booking.Any(b => b.CustomerID == id && b.Status == "Pending");
+
+                if (hasPendingBookings)
+                {
+                    response.Success = false;
+                    response.Message.Add("Cannot delete user with pending bookings.");
+                    return response;
+                }
+
+                var userBookings = _dbContext.Booking
+                    .Where(b => b.CustomerID == id)
+                    .ToList();
+
+                _dbContext.Booking.RemoveRange(userBookings);
+
+                _dbContext.User.Remove(user);
+                _dbContext.SaveChanges();
+
 
                 _dbContext.User.Remove(user);
                 _dbContext.SaveChanges();
@@ -191,5 +210,43 @@ namespace BikeRentingApp.BL.User
 
             return response;
         }
+
+        public RepositoryResponse<bool> ToggleLicenseVerification(int userId)
+        {
+            var response = new RepositoryResponse<bool>();
+            try
+            {
+                var user = _dbContext.User.SingleOrDefault(u => u.UserId == userId);
+                if (user != null)
+                {
+                    if (user.LicenseImage == null)
+                    {
+                        response.Success = false;
+                        response.Message.Add("Cannot verify license: License image not uploaded.");
+                        return response;
+                    }
+
+                    user.LicenseVerified = !user.LicenseVerified;
+                    _dbContext.SaveChanges();
+
+                    response.Success = true;
+                    response.Data = user.LicenseVerified;
+                    response.Message.Add("License verification status changed successfully.");
+                    return response;
+                }
+
+                response.Success = false;
+                response.Message.Add("User with the given ID was not found.");
+                return response;
+            }
+            catch
+            {
+                response.Success = false;
+                response.Message.Add("An error occurred while trying to change the license verification status.");
+                return response;
+            }
+        }
+
+
     }
 }

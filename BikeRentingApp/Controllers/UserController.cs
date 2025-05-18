@@ -13,9 +13,9 @@ namespace BikeRentingApp.Controllers
     {
         private readonly UserRepository _userRepository;
 
-        public UserController(BIkeRentingAppDataContext context)
+        public UserController(BIkeRentingAppDataContext context, UserRepository userRepository)
         {
-            _userRepository = new UserRepository(context);
+            _userRepository = userRepository;
         }
 
         [HttpGet]
@@ -149,5 +149,16 @@ namespace BikeRentingApp.Controllers
 
             return Ok(response);
         }
+
+        [HttpPut("toggle-license/{userId}")]
+        public IActionResult ToggleLicenseVerification(int userId)
+        {
+            var result = _userRepository.ToggleLicenseVerification(userId);
+            if (result.Success)
+                return Ok(result);
+
+            return BadRequest(result);
+        }
+
     }
 }

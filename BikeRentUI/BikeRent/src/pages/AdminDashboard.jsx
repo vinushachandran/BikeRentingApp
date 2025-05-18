@@ -6,6 +6,7 @@ import { FaEdit, FaTrash, FaDownload } from "react-icons/fa";
 import { saveAs } from "file-saver";
 import Papa from "papaparse";
 import axios from "axios";
+import BikeForm from "../components/BikeForm";
 
 const MySwal = withReactContent(Swal);
 
@@ -58,14 +59,7 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleEdit = (type, id) => {
-    if (user.userId === id) {
-      Swal.fire("Warning", "Admin account cannot be modified", "warning");
-      return;
-    }
-  };
-
-  const handleDelete = (type, id) => {
+  const handleDelete = async (type, id) => {
     if (type == "User") {
       if (user.userId === id) {
         Swal.fire(
@@ -75,35 +69,71 @@ const AdminDashboard = () => {
         );
         return;
       }
-      MySwal.fire({
-        title: `Are you sure you want to delete this ${type}?`,
+      const confirmResult = await Swal.fire({
+        title: "Are you sure?",
+        text: "You won't be able to revert this!",
         icon: "warning",
         showCancelButton: true,
+        confirmButtonColor: "#d33",
+        cancelButtonColor: "#3085d6",
         confirmButtonText: "Yes, delete it!",
-      }).then((result) => {
-        if (result.isConfirmed) {
-          MySwal.fire(
-            "Deleted!",
-            `${type} with ID ${id} has been deleted.`,
-            "success"
+      });
+
+      if (!confirmResult.isConfirmed) return;
+
+      try {
+        const response = await axios.delete(
+          `https://localhost:7176/api/User/${id}`
+        );
+
+        if (response.data.success) {
+          Swal.fire("Deleted!", "The user has been removed.", "success");
+          fetchUsers();
+        } else {
+          Swal.fire(
+            "Failed",
+            response.data.message || "Could not delete the User.",
+            "error"
           );
         }
-      });
+      } catch (error) {
+        console.log(error.response.data.message);
+        Swal.fire("Error", "" + error.response.data.message, "error");
+      }
     } else if (type == "Bike") {
-      MySwal.fire({
-        title: `Are you sure you want to delete this ${type}?`,
+      const confirmResult = await Swal.fire({
+        title: "Are you sure?",
+        text: "You won't be able to revert this!",
         icon: "warning",
         showCancelButton: true,
+        confirmButtonColor: "#d33",
+        cancelButtonColor: "#3085d6",
         confirmButtonText: "Yes, delete it!",
-      }).then((result) => {
-        if (result.isConfirmed) {
-          MySwal.fire(
-            "Deleted!",
-            `${type} with ID ${id} has been deleted.`,
-            "success"
+      });
+
+      if (!confirmResult.isConfirmed) return;
+
+      try {
+        const response = await axios.delete(
+          `https://localhost:7176/api/bikes/delete/${id}`
+        );
+
+        console.log(response);
+
+        if (response.data.success) {
+          Swal.fire("Deleted!", "The bike has been removed.", "success");
+          fetchBikes();
+        } else {
+          Swal.fire(
+            "Failed",
+            response.data.message || "Could not delete the bike.",
+            "error"
           );
         }
-      });
+      } catch (error) {
+        console.log(error.response.data.message);
+        Swal.fire("Error", "" + error.response.data.message, "error");
+      }
     }
   };
 
@@ -259,6 +289,56 @@ const AdminDashboard = () => {
     }
   };
 
+  const toggleLicenseVerification = async (userId) => {
+    try {
+      const response = await fetch(
+        `https://localhost:7176/api/user/toggle-license/${userId}`,
+        {
+          method: "PUT",
+        }
+      );
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        Swal.fire({
+          icon: "success",
+          title: "License Status Changed",
+          text: result.message[0],
+        });
+        fetchUsers(); // Refresh user list
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Failed",
+          text: result.message?.[0] || "An error occurred",
+        });
+      }
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Server Error",
+        text: "Something went wrong. Please try again." + error,
+      });
+    }
+  };
+
+  const [showBikeForm, setShowBikeForm] = useState(false);
+  const [bikeToEdit, setBikeToEdit] = useState(null);
+
+  // When you click "Add Bike"
+  const handleAddBike = () => {
+    setBikeToEdit(null);
+    setShowBikeForm(true);
+  };
+
+  // When you click "Edit" on a bike row
+  const handleEditBike = (bikeId) => {
+    const selected = bikes.find((b) => b.bikeID === bikeId);
+    setBikeToEdit(selected);
+    setShowBikeForm(true);
+  };
+
   const renderTable = () => {
     switch (activeTab) {
       case "Users":
@@ -298,6 +378,9 @@ const AdminDashboard = () => {
                         Role
                       </th>
                       <th className="px-6 py-4 font-semibold tracking-wider text-center">
+                        Licence Image
+                      </th>
+                      <th className="px-6 py-4 font-semibold tracking-wider text-center">
                         Licence verify
                       </th>
                       <th className="px-6 py-4 font-semibold tracking-wider text-center">
@@ -319,8 +402,22 @@ const AdminDashboard = () => {
                           <td className="px-6 py-4">{user.username}</td>
                           <td className="px-6 py-4">{user.email}</td>
                           <td className="px-6 py-4 capitalize">{user.role}</td>
+                          <td className="">
+                            {user.licenseImage ? (
+                              <div className="text-green-400">
+                                Licence found
+                              </div>
+                            ) : (
+                              <div className="text-red-400">
+                                Licence not found
+                              </div>
+                            )}
+                          </td>
                           <td className="px-6 py-4 text-center">
                             <button
+                              onClick={() =>
+                                toggleLicenseVerification(user.userId)
+                              }
                               className={`px-2 py-1 rounded ${
                                 user.licenseVerified
                                   ? "bg-green-500 text-white"
@@ -350,7 +447,7 @@ const AdminDashboard = () => {
                               >
                                 <FaEdit />
                               </button>
-                              <button
+                              {/* <button
                                 onClick={() =>
                                   handleDelete("User", user.userId)
                                 }
@@ -358,7 +455,7 @@ const AdminDashboard = () => {
                                 title="Delete"
                               >
                                 <FaTrash />
-                              </button>
+                              </button> */}
                             </div>
                           </td>
                         </tr>
@@ -479,13 +576,22 @@ const AdminDashboard = () => {
             <div className="bg-white p-6 rounded-xl shadow-md">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-800">Bikes</h2>
-                <button
-                  onClick={() => downloadCSV(bikes, "Bikes_Report")}
-                  className="bg-amber-900 text-white px-4 py-2 rounded-lg hover:bg-amber-800 flex items-center gap-2 transition-colors duration-300"
-                >
-                  <FaDownload className="text-lg" />
-                  <span className="hidden sm:inline">Download CSV</span>
-                </button>
+                <div className="flex justify-center gap-3 items-center">
+                  <button
+                    onClick={handleAddBike}
+                    className="bg-blue-700 text-white rounded-md p-2"
+                  >
+                    Add Bike
+                  </button>
+
+                  <button
+                    onClick={() => downloadCSV(bikes, "Bikes_Report")}
+                    className="bg-amber-900 text-white px-4 py-2 rounded-lg hover:bg-amber-800 flex items-center gap-2 transition-colors duration-300"
+                  >
+                    <FaDownload className="text-lg" />
+                    <span className="hidden sm:inline">Download CSV</span>
+                  </button>
+                </div>
               </div>
 
               <div className="overflow-x-auto">
@@ -533,7 +639,7 @@ const AdminDashboard = () => {
                           <td className="px-6 py-4">{bike.bikeNumber}</td>
                           <td className="px-6 py-4">{bike.type}</td>
                           <td className="px-6 py-4">{bike.address}</td>
-                          <td className="px-6 py-4">${bike.rentalPrice}</td>
+                          <td className="px-6 py-4">Rs. {bike.rentalPrice}</td>
                           <td className="px-6 py-4">
                             {hostUser ? hostUser.username : "Unknown"}
                           </td>
@@ -543,7 +649,7 @@ const AdminDashboard = () => {
                           <td className="px-6 py-4 text-center">
                             <div className="flex justify-center items-center space-x-4">
                               <button
-                                onClick={() => handleEdit("Bike", bike.bikeID)}
+                                onClick={() => handleEditBike(bike.bikeID)}
                                 className="text-blue-600 hover:text-blue-800 transition"
                                 title="Edit"
                               >
@@ -566,6 +672,24 @@ const AdminDashboard = () => {
                   </tbody>
                 </table>
               </div>
+              {showBikeForm && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+                  <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md relative">
+                    <button
+                      className="absolute top-2 right-2 text-gray-500 hover:text-red-500"
+                      onClick={() => setShowBikeForm(false)}
+                    >
+                      ✕
+                    </button>
+                    <BikeForm
+                      user={users}
+                      selectedBike={bikeToEdit}
+                      fetchBikes={fetchBikes}
+                      setShowBikeForm={setShowBikeForm}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </>
         );
@@ -575,6 +699,7 @@ const AdminDashboard = () => {
             <div className="bg-white p-6 rounded-xl shadow-md">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-800">Reviews</h2>
+
                 <button
                   onClick={() => downloadCSV(reviews, "Reviews_Report")}
                   className="bg-amber-900 text-white px-4 py-2 rounded-lg hover:bg-amber-800 flex items-center gap-2 transition-colors duration-300"

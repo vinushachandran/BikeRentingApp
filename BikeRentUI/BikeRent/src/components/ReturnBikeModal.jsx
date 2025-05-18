@@ -95,7 +95,7 @@ const ReturnBikeModal = ({ bike, onClose, onConfirmReturn, refresh }) => {
           <strong>Bike Number: {bike.bikeDetails.bikeNumber}</strong>
         </p>
         <p>Location: {bike.bikeDetails.address}</p>
-        <p>Rent: ${bike.bikeDetails.rentalPrice}/hour</p>
+        <p>Rent: Rs.{bike.bikeDetails.rentalPrice}/Day</p>
 
         {/* Rating input */}
         <div className="mt-4">
