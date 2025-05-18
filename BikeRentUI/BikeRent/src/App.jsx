@@ -7,22 +7,61 @@ import TouristDashboard from "./pages/TouristDashboard";
 import RentBikePage from "./pages/RentBikePage";
 import HostBikePage from "./pages/HostBikePage";
 import AdminDashboard from "./pages/AdminDashboard";
+import UnauthorizedPage from "./pages/UnauthorizedPage";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const App = () => {
   return (
-    <>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={<SignUpPage />} />
-          <Route path="/" element={<HomePage />} />
-          <Route path="/rent-bike" element={<RentBikePage />} />
-          <Route path="/host-bike" element={<HostBikePage />} />
-          <Route path="/tourist-dashboard" element={<TouristDashboard />} />
-          <Route path="/admin-dashboard" element={<AdminDashboard />} />
-        </Routes>
-      </BrowserRouter>
-    </>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignUpPage />} />
+        <Route path="/unauthorized" element={<UnauthorizedPage />} />
+
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute allowedRoles={["User"]}>
+              <HomePage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Protected Routes */}
+        <Route
+          path="/admin-dashboard"
+          element={
+            <ProtectedRoute allowedRoles={["Admin"]}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/tourist-dashboard"
+          element={
+            <ProtectedRoute allowedRoles={["User"]}>
+              <TouristDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/rent-bike"
+          element={
+            <ProtectedRoute allowedRoles={["User"]}>
+              <RentBikePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/host-bike"
+          element={
+            <ProtectedRoute allowedRoles={["User"]}>
+              <HostBikePage />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    </BrowserRouter>
   );
 };
 

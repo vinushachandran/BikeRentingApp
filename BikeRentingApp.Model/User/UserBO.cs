@@ -5,10 +5,10 @@ namespace BikeRentingApp.Model.User
     public class UserBO
     {
         [Key]
-        public long UserId { get; set; }
+        public int UserId { get; set; }
 
         [Required]
-        public string FullName { get; set; }
+        public string Username { get; set; }
 
         [Required, EmailAddress]
         public string Email { get; set; }

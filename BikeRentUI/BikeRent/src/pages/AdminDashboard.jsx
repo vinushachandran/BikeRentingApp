@@ -1,17 +1,13 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import DashboardNavbar from "../components/DashboardNavbar";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import { FaEdit, FaTrash, FaDownload } from "react-icons/fa";
 import { saveAs } from "file-saver";
 import Papa from "papaparse";
+import axios from "axios";
 
 const MySwal = withReactContent(Swal);
-
-const users = [
-  { id: 1, name: "Alice", email: "alice@example.com", role: "User" },
-  { id: 2, name: "Bob", email: "bob@example.com", role: "Manager" },
-];
 
 const bikes = [
   { id: 1, name: "Mountain Bike", location: "New York", rent: 15 },
@@ -36,13 +32,45 @@ const reviews = [
 ];
 
 const AdminDashboard = () => {
+  const [users, setUsers] = useState([]);
   const [activeTab, setActiveTab] = useState("Users");
 
+  const user = JSON.parse(localStorage.getItem("user"));
+
+  useEffect(() => {
+    console.log("useEffect triggered");
+
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const response = await axios.get("https://localhost:7176/api/User");
+      if (response.data.success) {
+        setUsers(response.data.data);
+      }
+    } catch (error) {
+      console.error("Caught error:", error.message);
+    }
+  };
+
   const handleEdit = (type, id) => {
-    MySwal.fire("Edit", `${type} with ID: ${id}`, "info");
+    if (user.userId === id) {
+      Swal.fire("Warning", "Admin account cannot be modified", "warning");
+      return;
+    }
   };
 
   const handleDelete = (type, id) => {
+    if (user.userId === id) {
+      Swal.fire(
+        "Warning",
+        "Delete prevent admin user cannot be delete",
+        "warning"
+      );
+      return;
+    }
+
     MySwal.fire({
       title: `Are you sure you want to delete this ${type}?`,
       icon: "warning",
@@ -52,7 +80,7 @@ const AdminDashboard = () => {
       if (result.isConfirmed) {
         MySwal.fire(
           "Deleted!",
-          `${type} with ID ${id} has been deleted.`,
+          `${type} with ID ${user.userId} has been deleted.`,
           "success"
         );
       }
@@ -87,9 +115,6 @@ const AdminDashboard = () => {
                   <thead className="text-md uppercase bg-green-600 text-white">
                     <tr>
                       <th className="px-6 py-4 font-semibold tracking-wider">
-                        ID
-                      </th>
-                      <th className="px-6 py-4 font-semibold tracking-wider">
                         Name
                       </th>
                       <th className="px-6 py-4 font-semibold tracking-wider">
@@ -113,21 +138,20 @@ const AdminDashboard = () => {
                             : "bg-gray-50 hover:bg-gray-100 transition"
                         }
                       >
-                        <td className="px-6 py-4">{user.id}</td>
-                        <td className="px-6 py-4">{user.name}</td>
+                        <td className="px-6 py-4">{user.username}</td>
                         <td className="px-6 py-4">{user.email}</td>
                         <td className="px-6 py-4 capitalize">{user.role}</td>
                         <td className="px-6 py-4 text-center">
                           <div className="flex justify-center items-center space-x-4">
                             <button
-                              onClick={() => handleEdit("User", user.id)}
+                              onClick={() => handleEdit("User", user.userId)}
                               className="text-blue-600 hover:text-blue-800 transition"
                               title="Edit"
                             >
                               <FaEdit />
                             </button>
                             <button
-                              onClick={() => handleDelete("User", user.id)}
+                              onClick={() => handleDelete("User", user.userId)}
                               className="text-red-600 hover:text-red-800 transition"
                               title="Delete"
                             >

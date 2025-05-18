@@ -4,9 +4,10 @@ using BTBS.ViewModel.RepositoryResponse;
 
 namespace BikeRentingApp.BL.User
 {
-    class UserRepository
+    public class UserRepository
     {
         private readonly BIkeRentingAppDataContext _dbContext;
+
         public UserRepository(BIkeRentingAppDataContext dbContext)
         {
             _dbContext = dbContext;
@@ -18,7 +19,10 @@ namespace BikeRentingApp.BL.User
             var response = new RepositoryResponse<UserBO>();
             try
             {
-                _dbContext.Users.Add(user);
+                // Hash the password
+                user.PasswordHash = PasswordHelper.HashPassword(user.PasswordHash);
+
+                _dbContext.User.Add(user);
                 _dbContext.SaveChanges();
                 response.Data = user;
                 response.Message.Add("User created successfully.");
@@ -38,7 +42,7 @@ namespace BikeRentingApp.BL.User
             var response = new RepositoryResponse<IEnumerable<UserBO>>();
             try
             {
-                var users = _dbContext.Users.ToList();
+                var users = _dbContext.User.ToList();
                 response.Data = users;
             }
             catch (Exception ex)
@@ -50,12 +54,12 @@ namespace BikeRentingApp.BL.User
         }
 
         // Read by ID
-        public RepositoryResponse<UserBO> GetUserById(long id)
+        public RepositoryResponse<UserBO> GetUserById(int id)
         {
             var response = new RepositoryResponse<UserBO>();
             try
             {
-                var user = _dbContext.Users.Find(id);
+                var user = _dbContext.User.Find(id);
                 if (user != null)
                 {
                     response.Data = user;
@@ -74,13 +78,13 @@ namespace BikeRentingApp.BL.User
             return response;
         }
 
-        // Update
+        // Update 
         public RepositoryResponse<UserBO> UpdateUser(UserBO user)
         {
             var response = new RepositoryResponse<UserBO>();
             try
             {
-                var existingUser = _dbContext.Users.Find(user.UserId);
+                var existingUser = _dbContext.User.Find(user.UserId);
                 if (existingUser == null)
                 {
                     response.Success = false;
@@ -88,10 +92,8 @@ namespace BikeRentingApp.BL.User
                     return response;
                 }
 
-                // Update properties
-                existingUser.FullName = user.FullName;
+                existingUser.Username = user.Username;
                 existingUser.Email = user.Email;
-                existingUser.PasswordHash = user.PasswordHash;
                 existingUser.PhoneNumber = user.PhoneNumber;
                 existingUser.Role = user.Role;
 
@@ -110,12 +112,12 @@ namespace BikeRentingApp.BL.User
         }
 
         // Delete
-        public RepositoryResponse<bool> DeleteUser(long id)
+        public RepositoryResponse<bool> DeleteUser(int id)
         {
             var response = new RepositoryResponse<bool>();
             try
             {
-                var user = _dbContext.Users.Find(id);
+                var user = _dbContext.User.Find(id);
                 if (user == null)
                 {
                     response.Success = false;
@@ -123,7 +125,7 @@ namespace BikeRentingApp.BL.User
                     return response;
                 }
 
-                _dbContext.Users.Remove(user);
+                _dbContext.User.Remove(user);
                 _dbContext.SaveChanges();
 
                 response.Data = true;
@@ -139,5 +141,33 @@ namespace BikeRentingApp.BL.User
             return response;
         }
 
+        // Login
+        public RepositoryResponse<UserBO> Login(string email, string password)
+        {
+            var response = new RepositoryResponse<UserBO>();
+            try
+            {
+                var hashedPassword = PasswordHelper.HashPassword(password);
+                var user = _dbContext.User.FirstOrDefault(u => u.Email == email && u.PasswordHash == hashedPassword);
+
+                if (user == null)
+                {
+                    response.Success = false;
+                    response.Message.Add("Invalid email or password.");
+                }
+                else
+                {
+                    response.Data = user;
+                    response.Message.Add("Login successful.");
+                }
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message.Add($"Error: {ex.Message}");
+            }
+
+            return response;
+        }
     }
 }
