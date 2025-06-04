@@ -17,11 +17,32 @@ const RentBikePage = () => {
 
   const fetchBikes = async () => {
     try {
+      const responseBooking = await axios.get(
+        "https://localhost:7176/api/Booking"
+      );
+      const bookedBike = responseBooking.data.data.filter(
+        (booking) => booking.status !== "Returned"
+      );
+
       const response = await axios.get("https://localhost:7176/api/bikes");
+
       if (response.data.success) {
-        const availableBikes = response.data.data.filter(
-          (bike) => bike.availabilityStatus && bike.hostID !== user.userId
-        );
+        const availableBikes = response.data.data
+          .filter(
+            (bike) => bike.availabilityStatus && bike.hostID !== user.userId
+          )
+          .map((bike) => {
+            const matchingBookings = bookedBike.filter(
+              (booking) => booking.bikeID === bike.bikeID
+            );
+
+            return {
+              ...bike,
+              booked: matchingBookings.length > 0,
+              bookedInfo: matchingBookings,
+            };
+          });
+
         setBikes(availableBikes);
       } else {
         console.warn("Failed to fetch bikes:", response.data.message);
@@ -64,14 +85,14 @@ const RentBikePage = () => {
   };
 
   useEffect(() => {
-    fetchBikes();
     fetchRentedBikes();
+    fetchBikes();
   }, []);
 
   const filteredBikes =
     selectedLocation === "All"
       ? bikes
-      : bikes.filter((bike) => bike.location === selectedLocation);
+      : bikes.filter((bike) => bike.address === selectedLocation);
 
   const handleReturnToggle = () => {
     setReturnMode((prev) => !prev);
@@ -89,7 +110,7 @@ const RentBikePage = () => {
   };
 
   const bikesToDisplay = returnMode ? rentedBikes : filteredBikes;
-  const uniqueLocations = ["All", ...new Set(bikes.map((b) => b.location))];
+  const uniqueLocations = ["All", ...new Set(bikes.map((b) => b.address))];
 
   const [licenseFile, setLicenseFile] = useState(null);
   const [licensePreviewUrl, setLicensePreviewUrl] = useState(null);
@@ -150,6 +171,8 @@ const RentBikePage = () => {
           text: result.message || "Something went wrong.",
         });
       }
+      fetchRentedBikes();
+      fetchBikes();
     } catch (error) {
       console.error("Upload error", error);
       Swal.fire({
@@ -291,6 +314,7 @@ const RentBikePage = () => {
                 returnMode={returnMode}
                 onReturnClick={handleBikeReturnClick}
                 refreshRentBike={fetchRentedBikes}
+                refresh={fetchBikes}
               />
             ))}
           </div>
@@ -303,6 +327,7 @@ const RentBikePage = () => {
           onClose={() => setSelectedReturnBike(null)}
           onConfirmReturn={handleConfirmReturn}
           refresh={fetchRentedBikes}
+          refreshBikes={fetchBikes}
         />
       )}
     </div>

@@ -6,6 +6,43 @@ import axios from "axios";
 
 const SignUpPage = () => {
   const [termCondition, setTermCondition] = useState(false);
+  const [nationality, setNationality] = useState("");
+  const countries = [
+    "India",
+    "United Kingdom",
+    "United States",
+    "Australia",
+    "Canada",
+    "Germany",
+    "France",
+    "China",
+    "Japan",
+    "Italy",
+    "Spain",
+    "Russia",
+    "Brazil",
+    "South Africa",
+    "New Zealand",
+    "Malaysia",
+    "Singapore",
+    "Thailand",
+    "UAE",
+    "Saudi Arabia",
+    "Bangladesh",
+    "Pakistan",
+    "Nepal",
+    "Mexico",
+    "Argentina",
+    "Netherlands",
+    "Switzerland",
+    "Sweden",
+    "Norway",
+    "Denmark",
+  ];
+
+  const handleNationalityChange = (event) => {
+    setNationality(event.target.value);
+  };
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -14,6 +51,9 @@ const SignUpPage = () => {
     password: "",
     confirmPassword: "",
     phoneNumber: "",
+    country: null,
+    passportNo: null,
+    emergencyNo: null,
   });
 
   const [errors, setErrors] = useState({});
@@ -28,11 +68,22 @@ const SignUpPage = () => {
     const newErrors = {};
 
     if (!formData.username) newErrors.username = "Full name is required";
+    if (!formData.phoneNumber)
+      newErrors.phoneNumber = "Phone number is required";
+    if (formData.phoneNumber.length != 10)
+      newErrors.phoneNumber = "Phone number must be a 10 digit";
     if (!formData.email) newErrors.email = "Email is required";
     if (!formData.password) newErrors.password = "Password is required";
     if (formData.password !== formData.confirmPassword)
       newErrors.confirmPassword = "Passwords do not match";
-
+    if (!nationality) newErrors.nationality = "Nationality required";
+    if (nationality == "Tourist") {
+      if (!formData.passportNo)
+        newErrors.passportNo = "Passpoert number is required";
+      if (!formData.country) newErrors.country = "Country is required";
+      if (!formData.emergencyNo)
+        newErrors.emergencyNo = "Emergency number is required";
+    }
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length === 0) {
@@ -46,12 +97,17 @@ const SignUpPage = () => {
         return;
       }
 
+      console.log(formData);
+
       const userPayload = {
         username: formData.username,
         email: formData.email,
         passwordHash: formData.password,
         phoneNumber: formData.phoneNumber,
-        role: "User",
+        role: nationality,
+        touristCountry: formData.country,
+        passportNumber: formData.passportNo,
+        emergencyContactNumber: formData.emergencyNo,
       };
 
       try {
@@ -118,14 +174,121 @@ const SignUpPage = () => {
           error={errors.email}
         />
 
-        <InputField
-          label="Phone Number"
-          name="phoneNumber"
-          value={formData.phoneNumber}
-          onChange={handleChange}
-          placeholder="Enter your phone number"
-        />
+        <div className="mt-4">
+          <label
+            htmlFor="phone number"
+            className="block mb-2 text-sm font-medium text-gray-700"
+          >
+            Phone Number
+          </label>
+          <input
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            type="text"
+            name="phoneNumber"
+            placeholder="0XXXXXXXXX"
+            value={formData.phoneNumber}
+            onChange={(e) => {
+              const value = e.target.value;
+              if (/^\d{0,10}$/.test(value)) {
+                setFormData((prev) => ({ ...prev, phoneNumber: value }));
+              }
+            }}
+            maxLength={10}
+          />
+          {errors.phoneNumber && (
+            <div className="text-red-500 text-sm mt-1">
+              {errors.phoneNumber}
+            </div>
+          )}
+        </div>
 
+        <div className="mt-4">
+          <label
+            htmlFor="nationality"
+            className="block mb-2 text-sm font-medium text-gray-700"
+          >
+            Select Nationality
+          </label>
+          <select
+            name="role"
+            value={nationality}
+            onChange={handleNationalityChange}
+            className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="">-- Select --</option>
+            <option value="Tourist">Tourist</option>
+            <option value="User">Sri Lankan</option>
+          </select>
+          {errors.nationality && (
+            <div className="text-red-500 text-sm mt-1">
+              {errors.nationality}
+            </div>
+          )}
+        </div>
+        {nationality == "Tourist" && (
+          <>
+            <div className="mt-4">
+              <label
+                htmlFor="country"
+                className="block mb-2 text-sm font-medium text-gray-700"
+              >
+                Select Country
+              </label>
+              <select
+                name="country"
+                value={formData.country}
+                onChange={handleChange}
+                className="block w-full p-2 border border-gray-300 rounded-md shadow-sm"
+              >
+                <option value="">-- Select Country --</option>
+                {countries.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+              {errors.country && (
+                <div className="text-red-500 text-sm mt-1">
+                  {errors.country}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-4">
+              <InputField
+                label="Passport Number"
+                name="passportNo"
+                value={formData.passportNo}
+                onChange={handleChange}
+                placeholder="Enter your passport number"
+                error={errors.passportNo}
+              />
+            </div>
+
+            <div className="mt-4">
+              <label
+                htmlFor="phone number"
+                className="block mb-2 text-sm font-medium text-gray-700"
+              >
+                Emergency Contact Number
+              </label>
+              <input
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                type="number"
+                name="emergencyNo"
+                placeholder="Emergency contact number"
+                value={formData.emergencyNo}
+                onChange={handleChange}
+              />
+              {errors.emergencyNo && (
+                <div className="text-red-500 text-sm mt-1">
+                  {errors.emergencyNo}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+        <div className="mt-4"></div>
         <InputField
           label="Password"
           type="password"

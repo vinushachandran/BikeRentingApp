@@ -22,19 +22,26 @@ const DashboardNavbar = ({ name }) => {
           className="p-3 text-xl font-bold text-white cursor-pointer"
           onClick={() => handleNavigation("/")}
         >
-          Local Voyage Srilanka {name === "Admin" && <>- Admin</>}
+          Local Voyage Srilanka{" "}
+          {user.role === "User" ? <>- Host</> : <>- {user.role}</>}{" "}
         </div>
 
-        <div className="space-x-4 flex items-center text-white cursor-pointer">
-          <div className="" onClick={() => handleNavigation("/")}>
-            Home
-          </div>
+        <div
+          className="cursor-pointer text-white font-bold"
+          onClick={() => handleNavigation("/")}
+        >
+          Home
+        </div>
+
+        <div className="space-x-2 flex items-center text-white cursor-pointer">
           {name != "Admin" && (
             <>
-              <div className="w-[30px] h-[30px] rounded-full bg-white flex justify-center items-center text-black font-bold">
+              <div className="w-[30px] h-[30px] rounded-full bg-white flex justify-center items-center text-black font-bold cursor-default">
                 {user.username?.charAt(0).toUpperCase() || "U"}
               </div>
-              <div className="text-white">{user.username}</div>
+              <div className="text-white cursor-default">
+                Welcome back {user.username}
+              </div>
             </>
           )}
           {user && (

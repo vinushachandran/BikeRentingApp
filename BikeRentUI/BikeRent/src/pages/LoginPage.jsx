@@ -36,9 +36,13 @@ const LoginPage = () => {
 
         if (response.data.success) {
           localStorage.setItem("user", JSON.stringify(response.data.data));
+
           if (response.data.data.role == "Admin") {
             handleNavigation("/admin-dashboard");
-          } else if (response.data.data.role == "User") {
+          } else if (
+            response.data.data.role == "User" ||
+            response.data.data.role == "Tourist"
+          ) {
             handleNavigation("/");
           }
         } else {

@@ -174,14 +174,22 @@ namespace BikeRentingApp.BL
                             return response;
                         }
 
-                        var hasAnyBookings = bookingResponse.Data.Any(b => b.BikeID == id);
+                        var bookingsToRemove = _context.Booking.Where(b => b.BikeID == id).ToList();
 
-                        if (hasAnyBookings)
+                        if (bookingsToRemove.Any())
                         {
-                            response.Success = false;
-                            response.Message.Add("Cannot delete: This bike has existing bookings.");
-                            return response;
+                            _context.Booking.RemoveRange(bookingsToRemove);
+                            _context.SaveChanges();
                         }
+
+                        var reviewToRemove = _context.Reviews.Where(b => b.BikeID == id).ToList();
+
+                        if (reviewToRemove.Any())
+                        {
+                            _context.Reviews.RemoveRange(reviewToRemove);
+                            _context.SaveChanges();
+                        }
+
 
                     }
                     _context.Bike.Remove(bike);

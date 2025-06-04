@@ -21,6 +21,22 @@ namespace BikeRentingApp.BL.User
             var response = new RepositoryResponse<UserBO>();
             try
             {
+                bool userExists = _dbContext.User.Any(u => u.Username == user.Username);
+                if (userExists)
+                {
+                    response.Success = false;
+                    response.Message.Add("Username already exists.");
+                    return response;
+                }
+
+                bool emailExist = _dbContext.User.Any(u => u.Email == user.Email);
+                if (emailExist)
+                {
+                    response.Success = false;
+                    response.Message.Add("Email already exists.");
+                    return response;
+                }
+
                 // Hash the password
                 user.PasswordHash = PasswordHelper.HashPassword(user.PasswordHash);
 

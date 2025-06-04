@@ -3,7 +3,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import SignUpPage from "./pages/Signup";
 import HomePage from "./pages/HomePage";
-import TouristDashboard from "./pages/TouristDashboard";
 import RentBikePage from "./pages/RentBikePage";
 import HostBikePage from "./pages/HostBikePage";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -21,7 +20,7 @@ const App = () => {
         <Route
           path="/"
           element={
-            <ProtectedRoute allowedRoles={["User"]}>
+            <ProtectedRoute allowedRoles={["User", "Tourist"]}>
               <HomePage />
             </ProtectedRoute>
           }
@@ -37,17 +36,9 @@ const App = () => {
           }
         />
         <Route
-          path="/tourist-dashboard"
-          element={
-            <ProtectedRoute allowedRoles={["User"]}>
-              <TouristDashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
           path="/rent-bike"
           element={
-            <ProtectedRoute allowedRoles={["User"]}>
+            <ProtectedRoute allowedRoles={["Tourist"]}>
               <RentBikePage />
             </ProtectedRoute>
           }

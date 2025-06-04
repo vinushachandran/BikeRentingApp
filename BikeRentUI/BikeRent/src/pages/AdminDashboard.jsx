@@ -3,10 +3,12 @@ import DashboardNavbar from "../components/DashboardNavbar";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import { FaEdit, FaTrash, FaDownload } from "react-icons/fa";
-import { saveAs } from "file-saver";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import Papa from "papaparse";
 import axios from "axios";
 import BikeForm from "../components/BikeForm";
+import SignUpPage from "./Signup";
 
 const MySwal = withReactContent(Swal);
 
@@ -15,7 +17,10 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("Users");
   const [bikes, setBikes] = useState([]);
   const [reviews, setReviews] = useState([]);
-
+  const [selectedUserId, setSelectedUserId] = useState("");
+  const [selectedUserIdForReview, setSelectedUserIdForReview] = useState("");
+  const [allBikes, setAllBikes] = useState([]);
+  const [allReviews, setAllReviews] = useState([]);
   const user = JSON.parse(localStorage.getItem("user"));
 
   useEffect(() => {
@@ -23,6 +28,33 @@ const AdminDashboard = () => {
     fetchBikes();
     fetchReviews();
   }, []);
+
+  useEffect(() => {
+    if (selectedUserId) {
+      const filtered = allBikes.filter((bike) => {
+        const bikeID = String(bike.hostID).trim();
+        const userId = String(selectedUserId).trim();
+        return bikeID === userId;
+      });
+
+      setBikes(filtered);
+    } else {
+      setBikes(allBikes);
+    }
+  }, [selectedUserId, allBikes]);
+
+  useEffect(() => {
+    if (selectedUserIdForReview) {
+      const filteredReview = allReviews.filter((bike) => {
+        const bikeId = String(bike.customerID).trim();
+        const userId = String(selectedUserIdForReview).trim();
+        return bikeId === userId;
+      });
+      setReviews(filteredReview);
+    } else {
+      setReviews(allReviews);
+    }
+  }, [selectedUserIdForReview, allReviews]);
 
   const fetchUsers = async () => {
     try {
@@ -37,8 +69,9 @@ const AdminDashboard = () => {
 
   const fetchBikes = async () => {
     try {
-      const response = await axios.get("https://localhost:7176/api/bikes");
+      const response = await axios.get("https://localhost:7176/api/Bikes");
       if (response.data.success) {
+        setAllBikes(response.data.data);
         setBikes(response.data.data);
       }
     } catch (error) {
@@ -52,6 +85,7 @@ const AdminDashboard = () => {
         "https://localhost:7176/api/Review/getAllReviews"
       );
       if (response.data.success) {
+        setAllReviews(response.data.data);
         setReviews(response.data.data);
       }
     } catch (error) {
@@ -137,10 +171,36 @@ const AdminDashboard = () => {
     }
   };
 
-  const downloadCSV = (data, filename) => {
-    const csv = Papa.unparse(data);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    saveAs(blob, `${filename}.csv`);
+  const downloadPDF = (data, filename) => {
+    const filteredData = data.map((row) => {
+      const newRow = {};
+      for (let key in row) {
+        if (!key.startsWith("licenseImage") && !key.startsWith("image")) {
+          newRow[key] = row[key];
+        }
+      }
+      return newRow;
+    });
+
+    console.log(filteredData);
+
+    const headers = Object.keys(filteredData[0] || {});
+    const rows = filteredData.map((row) =>
+      headers.map((header) => row[header])
+    );
+
+    const doc = new jsPDF();
+
+    doc.text(filename, 14, 16);
+    autoTable(doc, {
+      startY: 20,
+      head: [headers],
+      body: rows,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [41, 128, 185] },
+    });
+
+    doc.save(`${filename}.pdf`);
   };
 
   const [showModal, setShowModal] = useState(false);
@@ -155,20 +215,20 @@ const AdminDashboard = () => {
     role: "User",
   });
 
-  const openAddUserModal = () => {
-    setFormData({
-      id: null,
-      username: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
-      phoneNumber: "",
-      role: "User",
-    });
-    setErrors({});
-    setIsEditMode(false);
-    setShowModal(true);
-  };
+  // const openAddUserModal = () => {
+  //   setFormData({
+  //     id: null,
+  //     username: "",
+  //     email: "",
+  //     password: "",
+  //     confirmPassword: "",
+  //     phoneNumber: "",
+  //     role: "User",
+  //   });
+  //   setErrors({});
+  //   setIsEditMode(false);
+  //   setShowModal(true);
+  // };
 
   const openEditUserModal = (userObj) => {
     setFormData({
@@ -326,7 +386,6 @@ const AdminDashboard = () => {
   const [showBikeForm, setShowBikeForm] = useState(false);
   const [bikeToEdit, setBikeToEdit] = useState(null);
 
-  // When you click "Add Bike"
   const handleAddBike = () => {
     setBikeToEdit(null);
     setShowBikeForm(true);
@@ -348,18 +407,18 @@ const AdminDashboard = () => {
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-800">Users</h2>
                 <div className="flex gap-3">
-                  <button
+                  {/* <button
                     className="bg-blue-700 text-white px-4 py-2 rounded-md"
                     onClick={openAddUserModal}
                   >
                     Add User
-                  </button>
+                  </button> */}
                   <button
-                    onClick={() => downloadCSV(users, "Users_Report")}
+                    onClick={() => downloadPDF(users, "Users_Report")}
                     className="bg-amber-900 text-white px-4 py-2 rounded-lg hover:bg-amber-800 flex items-center gap-2 transition-colors duration-300"
                   >
                     <FaDownload className="text-lg" />
-                    <span className="hidden sm:inline">Download CSV</span>
+                    <span className="hidden sm:inline">Download PDF</span>
                   </button>
                 </div>
               </div>
@@ -402,17 +461,14 @@ const AdminDashboard = () => {
                           <td className="px-6 py-4">{user.username}</td>
                           <td className="px-6 py-4">{user.email}</td>
                           <td className="px-6 py-4 capitalize">{user.role}</td>
-                          <td className="">
-                            {user.licenseImage ? (
-                              <div className="text-green-400">
-                                Licence found
-                              </div>
-                            ) : (
-                              <div className="text-red-400">
-                                Licence not found
-                              </div>
-                            )}
+                          <td className="flex justify-center items-center">
+                            <img
+                              src={`data:image/jpeg;base64,${user.licenseImage}`}
+                              alt="Licence"
+                              className="w-[100px] h-[100px] object-fill rounded-md mb-2"
+                            />
                           </td>
+
                           <td className="px-6 py-4 text-center">
                             <button
                               onClick={() =>
@@ -465,6 +521,7 @@ const AdminDashboard = () => {
                 </table>
               </div>
             </div>
+
             {showModal && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
                 <div className="bg-white rounded-lg shadow-lg w-96 p-6 relative">
@@ -522,41 +579,45 @@ const AdminDashboard = () => {
                       className="border px-3 py-2 mb-4 w-full rounded border-gray-300"
                     />
 
-                    <>
-                      <input
-                        type="password"
-                        name="password"
-                        placeholder="Password"
-                        value={formData.password}
-                        onChange={handleChange}
-                        className={`border px-3 py-2 mb-2 w-full rounded ${
-                          errors.password ? "border-red-500" : "border-gray-300"
-                        }`}
-                      />
-                      {errors.password && (
-                        <p className="text-red-500 text-sm mb-2">
-                          {errors.password}
-                        </p>
-                      )}
+                    {!isEditMode && (
+                      <>
+                        <input
+                          type="password"
+                          name="password"
+                          placeholder="Password"
+                          value={formData.password}
+                          onChange={handleChange}
+                          className={`border px-3 py-2 mb-2 w-full rounded ${
+                            errors.password
+                              ? "border-red-500"
+                              : "border-gray-300"
+                          }`}
+                        />
+                        {errors.password && (
+                          <p className="text-red-500 text-sm mb-2">
+                            {errors.password}
+                          </p>
+                        )}
 
-                      <input
-                        type="password"
-                        name="confirmPassword"
-                        placeholder="Confirm Password"
-                        value={formData.confirmPassword}
-                        onChange={handleChange}
-                        className={`border px-3 py-2 mb-2 w-full rounded ${
-                          errors.confirmPassword
-                            ? "border-red-500"
-                            : "border-gray-300"
-                        }`}
-                      />
-                      {errors.confirmPassword && (
-                        <p className="text-red-500 text-sm mb-2">
-                          {errors.confirmPassword}
-                        </p>
-                      )}
-                    </>
+                        <input
+                          type="password"
+                          name="confirmPassword"
+                          placeholder="Confirm Password"
+                          value={formData.confirmPassword}
+                          onChange={handleChange}
+                          className={`border px-3 py-2 mb-2 w-full rounded ${
+                            errors.confirmPassword
+                              ? "border-red-500"
+                              : "border-gray-300"
+                          }`}
+                        />
+                        {errors.confirmPassword && (
+                          <p className="text-red-500 text-sm mb-2">
+                            {errors.confirmPassword}
+                          </p>
+                        )}
+                      </>
+                    )}
 
                     <button
                       type="submit"
@@ -584,12 +645,30 @@ const AdminDashboard = () => {
                     Add Bike
                   </button>
 
+                  <div className="flex items-center gap-4">
+                    <label className="text-gray-700 font-medium">
+                      Filter by Host:
+                    </label>
+                    <select
+                      className="border px-3 py-2 rounded"
+                      value={selectedUserId}
+                      onChange={(e) => setSelectedUserId(e.target.value)}
+                    >
+                      <option value="">All Hosts</option>
+                      {users.map((user) => (
+                        <option key={user.userId} value={user.userId}>
+                          {user.username}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
                   <button
-                    onClick={() => downloadCSV(bikes, "Bikes_Report")}
+                    onClick={() => downloadPDF(bikes, "Bikes_Report")}
                     className="bg-amber-900 text-white px-4 py-2 rounded-lg hover:bg-amber-800 flex items-center gap-2 transition-colors duration-300"
                   >
                     <FaDownload className="text-lg" />
-                    <span className="hidden sm:inline">Download CSV</span>
+                    <span className="hidden sm:inline">Download PDF</span>
                   </button>
                 </div>
               </div>
@@ -700,13 +779,35 @@ const AdminDashboard = () => {
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-800">Reviews</h2>
 
-                <button
-                  onClick={() => downloadCSV(reviews, "Reviews_Report")}
-                  className="bg-amber-900 text-white px-4 py-2 rounded-lg hover:bg-amber-800 flex items-center gap-2 transition-colors duration-300"
-                >
-                  <FaDownload className="text-lg" />
-                  <span className="hidden sm:inline">Download CSV</span>
-                </button>
+                <div className="">
+                  <div className="flex items-center gap-4">
+                    <label className="text-gray-700 font-medium">
+                      Filter by Host:
+                    </label>
+                    <select
+                      className="border px-3 py-2 rounded"
+                      value={selectedUserId}
+                      onChange={(e) =>
+                        setSelectedUserIdForReview(e.target.value)
+                      }
+                    >
+                      <option value="">All Hosts</option>
+                      {users.map((user) => (
+                        <option key={user.userId} value={user.userId}>
+                          {user.username}
+                        </option>
+                      ))}
+                    </select>
+
+                    <button
+                      onClick={() => downloadPDF(reviews, "Reviews_Report")}
+                      className="bg-amber-900 text-white px-4 py-2 rounded-lg hover:bg-amber-800 flex items-center gap-2 transition-colors duration-300"
+                    >
+                      <FaDownload className="text-lg" />
+                      <span className="hidden sm:inline">Download PDF</span>
+                    </button>
+                  </div>
+                </div>
               </div>
 
               <div className="overflow-x-auto">
@@ -735,6 +836,7 @@ const AdminDashboard = () => {
                       const bike = bikes.find(
                         (b) => b.bikeID === review.bikeID
                       );
+
                       return (
                         <tr
                           key={review.id}
@@ -745,10 +847,10 @@ const AdminDashboard = () => {
                           }
                         >
                           <td className="px-6 py-4">
-                            {customer ? customer.username : "UnknownUser"}
+                            {customer ? customer.username : "Unknown User"}
                           </td>
                           <td className="px-6 py-4">
-                            {bike ? bike.bikeNumber : "UnknownUser"}
+                            {bike ? bike.bikeNumber : "Unknown Bike"}
                           </td>
                           <td className="px-6 py-4">{review.rating}</td>
                           <td className="px-6 py-4">{review.comment}</td>

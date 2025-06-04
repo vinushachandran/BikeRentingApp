@@ -1,7 +1,13 @@
 import React, { useState } from "react";
 import Swal from "sweetalert2";
 
-const ReturnBikeModal = ({ bike, onClose, onConfirmReturn, refresh }) => {
+const ReturnBikeModal = ({
+  bike,
+  onClose,
+  onConfirmReturn,
+  refresh,
+  refreshBikes,
+}) => {
   const [rating, setRating] = useState("");
   const [comment, setComment] = useState("");
   const [loading, setLoading] = useState(false);
@@ -69,6 +75,7 @@ const ReturnBikeModal = ({ bike, onClose, onConfirmReturn, refresh }) => {
         text: "Bike returned and review submitted successfully.",
       });
       refresh();
+      refreshBikes();
       onConfirmReturn();
     } catch (error) {
       console.error(error);
@@ -96,6 +103,10 @@ const ReturnBikeModal = ({ bike, onClose, onConfirmReturn, refresh }) => {
         </p>
         <p>Location: {bike.bikeDetails.address}</p>
         <p>Rent: Rs.{bike.bikeDetails.rentalPrice}/Day</p>
+
+        <div className="text-red-600 font-semibold">
+          Note : The fuel tank must be fully filled when returning the bike
+        </div>
 
         {/* Rating input */}
         <div className="mt-4">

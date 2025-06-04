@@ -86,7 +86,7 @@ namespace BikeRentingApp.BL
 
                 var isBooked = _context.Booking.Any(b =>
                     b.BikeID == booking.BikeID &&
-                    (booking.StartDate < b.EndDate && booking.EndDate > b.StartDate));
+                    (booking.StartDate < b.EndDate && booking.EndDate > b.StartDate) && b.Status != "Returned");
 
 
                 if (isBooked)
@@ -142,15 +142,18 @@ namespace BikeRentingApp.BL
                     return response;
                 }
 
-                var isBooked = _context.Booking.Any(b =>
+                if (booking.Status != "Returned")
+                {
+                    var isBooked = _context.Booking.Any(b =>
                     b.BikeID == booking.BikeID &&
                     (booking.StartDate < b.EndDate && booking.EndDate > b.StartDate));
+                    if (isBooked)
+                    {
+                        response.Success = false;
+                        response.Message.Add("The bike is already booked for the selected date range.");
+                        return response;
+                    }
 
-                if (isBooked)
-                {
-                    response.Success = false;
-                    response.Message.Add("The bike is already booked for the selected date range.");
-                    return response;
                 }
 
                 existing.CustomerID = booking.CustomerID;
@@ -198,5 +201,42 @@ namespace BikeRentingApp.BL
             }
             return response;
         }
+
+        public RepositoryResponse<bool> ExtendBooking(int bookingId, DateTime newEndDate)
+        {
+            var response = new RepositoryResponse<bool>();
+
+            try
+            {
+                var booking = _context.Booking.Find(bookingId);
+                if (booking == null)
+                {
+                    response.Success = false;
+                    response.Message.Add("Booking not found.");
+                    return response;
+                }
+
+                if (newEndDate <= booking.EndDate)
+                {
+                    response.Success = false;
+                    response.Message.Add("New end date must be later than the current end date.");
+                    return response;
+                }
+
+                booking.EndDate = newEndDate;
+                _context.SaveChanges();
+
+                response.Data = true;
+                response.Message.Add("Booking extended successfully.");
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message.Add($"Error extending booking: {ex.Message}");
+            }
+
+            return response;
+        }
+
     }
 }

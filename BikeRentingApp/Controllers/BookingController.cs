@@ -1,8 +1,8 @@
 ﻿using BikeRentingApp.BL;
 using BikeRentingApp.Model;
+using BikeRentingApp.ViewModel.UserViewModel;
 using BTBS.ViewModel.RepositoryResponse;
 using Microsoft.AspNetCore.Mvc;
-using System.Collections.Generic;
 
 namespace BikeRentingApp.API.Controllers
 {
@@ -66,5 +66,25 @@ namespace BikeRentingApp.API.Controllers
                 return NotFound(response);
             return Ok(response);
         }
+
+
+        [HttpPut("extend")]
+        public IActionResult ExtendBooking([FromBody] ExtendBookingRequest request)
+        {
+            if (request.NewEndDate <= DateTime.UtcNow)
+            {
+                return BadRequest(new { success = false, message = "New end date must be in the future." });
+            }
+
+            var result = _bookingRepo.ExtendBooking(request.BookingID, request.NewEndDate);
+
+            if (!result.Success || !result.Data)
+            {
+                return NotFound(new { success = false, message = string.Join(" ", result.Message) });
+            }
+
+            return Ok(new { success = true, message = string.Join(" ", result.Message) });
+        }
+
     }
 }

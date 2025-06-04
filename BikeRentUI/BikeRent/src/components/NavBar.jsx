@@ -22,7 +22,8 @@ const NavBar = () => {
           className="p-3 text-xl font-bold text-purple-700 cursor-pointer"
           onClick={() => handleNavigation("/")}
         >
-          Local Voyage Srilanka
+          Local Voyage Srilanka{" "}
+          {user.role === "User" ? <>- Host</> : <>- {user.role}</>}{" "}
         </div>
 
         <div className="flex items-center space-x-4">
@@ -33,7 +34,7 @@ const NavBar = () => {
                   className="text-gray-700 font-medium cursor-pointer"
                   onClick={() => handleNavigation("/admin-dashboard")}
                 >
-                  {user.role}
+                  {user.role} Panel
                 </div>
               )}
               <button
