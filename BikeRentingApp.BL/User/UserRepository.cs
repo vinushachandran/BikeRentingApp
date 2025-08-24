@@ -124,20 +124,21 @@ namespace BikeRentingApp.BL.User
                 {
                     imageData = existingUser.LicenseImage;
                 }
-
-                if (user.Password != null)
+                                
+                if (!string.IsNullOrWhiteSpace(user.Password))
                 {
                     existingUser.PasswordHash = PasswordHelper.HashPassword(user.Password);
                 }
 
                 existingUser.Username = user.Username;
-                existingUser.Email = user.Email;
+                existingUser.Email = user.Email.Trim().ToLower();
                 existingUser.PhoneNumber = user.PhoneNumber;
                 existingUser.Role = user.Role;
                 existingUser.LicenseImage = imageData;
 
                 _dbContext.SaveChanges();
 
+                response.Success = true;
                 response.Data = existingUser;
                 response.Message.Add("User updated successfully.");
             }
@@ -149,6 +150,8 @@ namespace BikeRentingApp.BL.User
 
             return response;
         }
+
+
 
         // Delete
         public RepositoryResponse<bool> DeleteUser(int id)
@@ -202,18 +205,20 @@ namespace BikeRentingApp.BL.User
         public RepositoryResponse<UserBO> Login(string email, string password)
         {
             var response = new RepositoryResponse<UserBO>();
+
             try
             {
-                var hashedPassword = PasswordHelper.HashPassword(password);
-                var user = _dbContext.User.FirstOrDefault(u => u.Email == email && u.PasswordHash == hashedPassword);
+                var normalizedEmail = email.Trim().ToLower();
+                var user = _dbContext.User.FirstOrDefault(u => u.Email == normalizedEmail);
 
-                if (user == null)
+                if (user == null || !PasswordHelper.VerifyPassword(password, user.PasswordHash))
                 {
                     response.Success = false;
                     response.Message.Add("Invalid email or password.");
                 }
                 else
                 {
+                    response.Success = true;
                     response.Data = user;
                     response.Message.Add("Login successful.");
                 }
@@ -226,6 +231,7 @@ namespace BikeRentingApp.BL.User
 
             return response;
         }
+
 
         public RepositoryResponse<bool> ToggleLicenseVerification(int userId)
         {

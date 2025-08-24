@@ -9,17 +9,32 @@ const BikeCard = ({
   host,
   onDelete,
   refreshRentBike,
-  refresh,
+  onUpdateBike,
 }) => {
+  // Rent modal state
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     startDate: "",
     days: "",
   });
+
+  // Extend rental modal state
   const [showExtendModal, setShowExtendModal] = useState(false);
-  const [extendData, setExtendData] = useState({
-    endDate: "",
+  const [extendData, setExtendData] = useState({ endDate: "" });
+
+  // Update bike modal state
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [updateData, setUpdateData] = useState({
+    bikeID: 0,
+    bikeNumber: "",
+    type: "",
+    address: "",
+    rentalPrice: "",
+    hostID: 0,
+    availabilityStatus: true,
+    image: null,
+    previewUrl: null,
   });
 
   const user = JSON.parse(localStorage.getItem("user"));
@@ -29,17 +44,16 @@ const BikeCard = ({
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  function calculateEndDate(startDateStr, days) {
+  const calculateEndDate = (startDateStr, days) => {
     const start = new Date(startDateStr);
     start.setDate(start.getDate() + Number(days));
     return start.toISOString();
-  }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const startDateISO = new Date(formData.startDate).toISOString();
-
     const bookingData = {
       customerID: user?.userId,
       bikeID: bike.bikeID,
@@ -47,15 +61,12 @@ const BikeCard = ({
       endDate: calculateEndDate(formData.startDate, formData.days),
       status: "Pending",
     };
+
     try {
       const response = await axios.post(
         "https://localhost:7176/api/Booking",
         bookingData,
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
+        { headers: { "Content-Type": "application/json" } }
       );
 
       if (response.data.success) {
@@ -76,24 +87,22 @@ const BikeCard = ({
         });
       }
     } catch (error) {
-      console.error("Booking error:", error.response.data.message);
+      console.error("Booking error:", error.response?.data?.message || error);
       Swal.fire({
         icon: "error",
         title: "Booking Error",
-        text: "Booking failed." + error.response.data.message,
+        text: "Booking failed. " + (error.response?.data?.message || ""),
       });
     }
   };
 
   const imageSrc =
-    bike.image || bike.bikeDetails.image
+    bike.image || bike.bikeDetails?.image
       ? `data:image/jpeg;base64,${bike.image || bike.bikeDetails.image}`
       : "/placeholder-bike.jpg";
 
   const handleExtendClick = () => {
-    setExtendData({
-      endDate: bike.endDate.split("T")[0],
-    });
+    setExtendData({ endDate: bike.endDate.split("T")[0] });
     setShowExtendModal(true);
   };
 
@@ -106,9 +115,7 @@ const BikeCard = ({
           bookingID: bike.bookingID,
           newEndDate: new Date(extendData.endDate).toISOString(),
         },
-        {
-          headers: { "Content-Type": "application/json" },
-        }
+        { headers: { "Content-Type": "application/json" } }
       );
 
       if (response.data.success) {
@@ -129,6 +136,112 @@ const BikeCard = ({
     }
   };
 
+  const openUpdateModal = () => {
+    setUpdateData({
+      bikeID: bike.bikeID,
+      hostID: bike.hostID,
+      bikeNumber: bike.bikeNumber || bike.bikeDetails?.bikeNumber || "",
+      type: bike.type || "",
+      address: bike.address || bike.bikeDetails?.address || "",
+      rentalPrice: bike.rentalPrice || bike.bikeDetails?.rentalPrice || "",
+      availabilityStatus:
+        bike.availabilityStatus !== undefined ? bike.availabilityStatus : true,
+      image: null,
+      previewUrl: bike.image
+        ? `data:image/jpeg;base64,${bike.image}`
+        : bike.bikeDetails?.image
+        ? `data:image/jpeg;base64,${bike.bikeDetails.image}`
+        : null,
+    });
+    setShowUpdateModal(true);
+  };
+
+  const handleUpdateInputChange = (e) => {
+    const { name, value } = e.target;
+    setUpdateData((prev) => ({
+      ...prev,
+      [name]:
+        name === "availabilityStatus"
+          ? value === "true"
+          : name === "rentalPrice"
+          ? Number(value)
+          : value,
+    }));
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setUpdateData((prev) => ({
+        ...prev,
+        image: file,
+        previewUrl: URL.createObjectURL(file),
+      }));
+    }
+  };
+
+  const handleUpdateSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!updateData.bikeNumber.trim()) {
+      Swal.fire("Error", "Bike number is required", "error");
+      return;
+    }
+    if (!updateData.type.trim()) {
+      Swal.fire("Error", "Bike type is required", "error");
+      return;
+    }
+    if (!updateData.address.trim()) {
+      Swal.fire("Error", "Address is required", "error");
+      return;
+    }
+    if (!updateData.rentalPrice || parseFloat(updateData.rentalPrice) <= 0) {
+      Swal.fire("Error", "Rental price must be greater than 0", "error");
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append("BikeID", updateData.bikeID);
+      formData.append("BikeNumber", updateData.bikeNumber);
+      formData.append("Type", updateData.type);
+      formData.append("Address", updateData.address);
+      formData.append("RentalPrice", updateData.rentalPrice);
+      formData.append("HostID", updateData.hostID);
+      formData.append("AvailabilityStatus", updateData.availabilityStatus);
+      if (updateData.image) {
+        formData.append("ImageFile", updateData.image);
+      }
+
+      const response = await axios.put(
+        `https://localhost:7176/api/bikes/update`,
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+
+      if (response.data.success === true) {
+        Swal.fire("Success", "Bike details updated successfully!", "success");
+        setShowUpdateModal(false);
+        if (onUpdateBike) {
+          await onUpdateBike(updateData);
+        }
+      } else {
+        Swal.fire(
+          "Error",
+          response.data.message || "Failed to update bike",
+          "error"
+        );
+      }
+    } catch (error) {
+      Swal.fire(
+        "Error",
+        error.response?.data?.message || "Failed to update bike",
+        "error"
+      );
+      console.error(error);
+    }
+  };
+
   return (
     <>
       <div className="flex flex-col justify-between border border-gray-300 shadow rounded-xl p-4 w-full max-w-full bg-white hover:shadow-lg transition min-h-[150px]">
@@ -140,14 +253,15 @@ const BikeCard = ({
           />
         </div>
         <h3 className="text-xl font-semibold">
-          Bike number : {bike.bikeNumber || bike.bikeDetails.bikeNumber}
+          Bike number : {bike.bikeNumber || bike.bikeDetails?.bikeNumber}
         </h3>
         <p className="text-sm text-gray-600">
-          Location: {bike.address || bike.bikeDetails.address}{" "}
+          Location: {bike.address || bike.bikeDetails?.address}{" "}
         </p>
         <p className="text-sm text-gray-600">
-          Rent: Rs.{bike.rentalPrice || bike.bikeDetails.rentalPrice}/day
+          Rent: Rs.{bike.rentalPrice || bike.bikeDetails?.rentalPrice}/day
         </p>
+
         {returnMode && (
           <>
             <p className="text-sm text-gray-600">
@@ -158,32 +272,40 @@ const BikeCard = ({
             </p>
           </>
         )}
+
         {!returnMode && bike.booked && (
           <>
-            <>
-              <p className="text-sm text-gray-600">
-                Start date:{" "}
-                {new Date(bike.bookedInfo[0].startDate).toLocaleDateString(
-                  "en-CA"
-                ) || ""}
-              </p>
-              <p className="text-sm text-gray-600">
-                End date:{" "}
-                {new Date(bike.bookedInfo[0].endDate).toLocaleDateString(
-                  "en-CA"
-                ) || ""}
-              </p>
-            </>
+            <p className="text-sm text-gray-600">
+              Start date:{" "}
+              {new Date(bike.bookedInfo[0]?.startDate).toLocaleDateString(
+                "en-CA"
+              ) || ""}
+            </p>
+            <p className="text-sm text-gray-600">
+              End date:{" "}
+              {new Date(bike.bookedInfo[0]?.endDate).toLocaleDateString(
+                "en-CA"
+              ) || ""}
+            </p>
           </>
         )}
+
         <div className="mt-4 space-y-2">
           {host ? (
-            <button
-              className="bg-red-600 text-white px-4 py-2 rounded w-full"
-              onClick={onDelete}
-            >
-              Delete Bike
-            </button>
+            <>
+              <button
+                className="bg-red-600 text-white px-4 py-2 rounded w-full"
+                onClick={onDelete}
+              >
+                Delete Bike
+              </button>
+              <button
+                className="bg-yellow-600 text-white px-4 py-2 rounded w-full"
+                onClick={openUpdateModal}
+              >
+                Update Bike
+              </button>
+            </>
           ) : (
             <>
               {!returnMode && (
@@ -226,6 +348,7 @@ const BikeCard = ({
         </div>
       </div>
 
+      {/* Extend Rental Modal */}
       {showExtendModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
           <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative">
@@ -236,7 +359,7 @@ const BikeCard = ({
               &times;
             </button>
             <h2 className="text-xl font-bold mb-4">
-              Extend Rental for "{bike.bikeDetails.bikeNumber}"
+              Extend Rental for "{bike.bikeDetails?.bikeNumber}"
             </h2>
             <form className="space-y-4" onSubmit={handleExtendSubmit}>
               <div>
@@ -283,6 +406,7 @@ const BikeCard = ({
         </div>
       )}
 
+      {/* Rent Bike Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
           <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative">
@@ -303,7 +427,6 @@ const BikeCard = ({
                 required
                 className="w-full border rounded px-3 py-2"
               />
-              {/* Start Date input */}
               <input
                 type="date"
                 name="startDate"
@@ -313,7 +436,6 @@ const BikeCard = ({
                 min={new Date().toLocaleDateString("en-CA")}
                 className="w-full border rounded px-3 py-2"
               />
-
               <input
                 type="number"
                 name="days"
@@ -337,6 +459,110 @@ const BikeCard = ({
                   className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                 >
                   Confirm
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Update Bike Modal */}
+      {showUpdateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative max-h-[90vh] overflow-auto">
+            <button
+              className="absolute top-2 right-2 text-gray-500 hover:text-red-500 text-xl"
+              onClick={() => setShowUpdateModal(false)}
+            >
+              &times;
+            </button>
+            <h2 className="text-xl font-bold mb-4">Update Bike</h2>
+            <form className="space-y-4" onSubmit={handleUpdateSubmit}>
+              <input
+                type="text"
+                name="hostID"
+                value={updateData.hostID}
+                required
+                className="w-full border rounded px-3 py-2"
+                placeholder="Bike Number"
+              />
+              <input
+                type="text"
+                name="bikeNumber"
+                value={updateData.bikeNumber}
+                onChange={handleUpdateInputChange}
+                required
+                className="w-full border rounded px-3 py-2"
+                placeholder="Bike Number"
+              />
+              <input
+                type="text"
+                name="type"
+                value={updateData.type}
+                onChange={handleUpdateInputChange}
+                required
+                className="w-full border rounded px-3 py-2"
+                placeholder="Bike Type"
+              />
+              <input
+                type="text"
+                name="address"
+                value={updateData.address}
+                onChange={handleUpdateInputChange}
+                required
+                className="w-full border rounded px-3 py-2"
+                placeholder="Address"
+              />
+              <input
+                type="number"
+                name="rentalPrice"
+                value={updateData.rentalPrice}
+                onChange={handleUpdateInputChange}
+                required
+                min={0}
+                className="w-full border rounded px-3 py-2"
+                placeholder="Rental Price"
+              />
+              <select
+                name="availabilityStatus"
+                value={updateData.availabilityStatus.toString()}
+                onChange={handleUpdateInputChange}
+                className="w-full border rounded px-3 py-2"
+              >
+                <option value="true">Available</option>
+                <option value="false">Not Available</option>
+              </select>
+              <label className="block">
+                Select New Image (optional):
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="mt-1"
+                />
+              </label>
+
+              {updateData.previewUrl && (
+                <img
+                  src={updateData.previewUrl}
+                  alt="Preview"
+                  className="w-full h-40 object-cover rounded-md mt-2"
+                />
+              )}
+
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowUpdateModal(false)}
+                  className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700"
+                >
+                  Update
                 </button>
               </div>
             </form>

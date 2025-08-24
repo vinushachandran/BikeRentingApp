@@ -3,7 +3,6 @@ using System.ComponentModel.DataAnnotations;
 
 public class BikeViewModel
 {
-
     public int BikeID { get; set; }
     [Required]
     public string BikeNumber { get; set; } = string.Empty;

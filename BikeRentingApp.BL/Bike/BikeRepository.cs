@@ -133,9 +133,6 @@ namespace BikeRentingApp.BL
                         existing.Image = memoryStream.ToArray();
                     }
                 }
-
-
-
                 _context.SaveChanges();
                 response.Data = "Bike updated successfully.";
             }

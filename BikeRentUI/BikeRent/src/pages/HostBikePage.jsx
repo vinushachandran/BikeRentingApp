@@ -29,11 +29,9 @@ const HostBikePage = () => {
     try {
       const response = await axios.get("https://localhost:7176/api/bikes");
       const apiBikes = response.data.data || [];
-
       const userHostedBikes = apiBikes.filter(
         (bike) => bike.hostID === user.userId
       );
-
       setHostedBikes(userHostedBikes);
     } catch (error) {
       console.error("Failed to fetch bikes:", error);
@@ -80,21 +78,29 @@ const HostBikePage = () => {
     const formData = new FormData();
     formData.append("BikeNumber", bikeData.bikeNumber);
     formData.append("Type", bikeData.type);
-    formData.append("Address", bikeData.address);
+    formData.append("Address", bikeData.address); // Added missing Address
     formData.append("RentalPrice", bikeData.rentalPrice);
-    formData.append("AvailabilityStatus", bikeData.availabilityStatus);
+    // Convert availabilityStatus to boolean
+    formData.append(
+      "AvailabilityStatus",
+      bikeData.availabilityStatus === "true"
+    );
     formData.append("HostID", user.userId);
     formData.append("ImageFile", bikeData.image);
 
     try {
-      const response = await fetch("https://localhost:7176/api/bikes/add", {
-        method: "POST",
-        body: formData,
-      });
+      // Using axios for consistency
+      const response = await axios.post(
+        "https://localhost:7176/api/bikes/add",
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
 
-      const result = await response.json();
+      const result = response.data;
 
-      if (response.ok && result.success) {
+      if (response.status === 200 && result.success) {
         fetchBikes();
         setBikeData({
           bikeNumber: "",
@@ -150,8 +156,6 @@ const HostBikePage = () => {
         `https://localhost:7176/api/bikes/delete/${bikeId}`
       );
 
-      console.log(response);
-
       if (response.data.success) {
         Swal.fire("Deleted!", "The bike has been removed.", "success");
         fetchBikes();
@@ -163,8 +167,55 @@ const HostBikePage = () => {
         );
       }
     } catch (error) {
-      console.log(error.response.data.message);
       Swal.fire("Error", "" + error.response.data.message, "error");
+    }
+  };
+
+  // Updated update function with correct URL and boolean conversion
+  const handleUpdateBike = async (updateData) => {
+    try {
+      const formData = new FormData();
+      formData.append("BikeID", updateData.bikeID);
+      formData.append("BikeNumber", updateData.bikeNumber);
+      formData.append("Type", updateData.type);
+      formData.append("Address", updateData.address);
+      formData.append("RentalPrice", updateData.rentalPrice);
+      formData.append(
+        "AvailabilityStatus",
+        updateData.availabilityStatus === "true"
+      );
+      formData.append("HostID", user.userId);
+      if (updateData.image) {
+        formData.append("ImageFile", updateData.image);
+      }
+
+      const response = await axios.put(
+        "https://localhost:7176/api/bikes/update",
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
+
+      if (response.data.success) {
+        Swal.fire("Success", "Bike details updated successfully!", "success");
+        await fetchBikes();
+        return { success: true };
+      } else {
+        Swal.fire(
+          "Error",
+          response.data.message || "Failed to update bike",
+          "error"
+        );
+        return { success: false, message: response.data.message };
+      }
+    } catch (error) {
+      Swal.fire(
+        "Error",
+        error?.response?.data?.message || "Failed to update bike",
+        "error"
+      );
+      return { success: false, message: error.message };
     }
   };
 
@@ -178,12 +229,12 @@ const HostBikePage = () => {
         <div className="max-w-6xl mx-auto">
           {/* Bikes list */}
           <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-boldtext-center font-semibold">
+            <h2 className="text-2xl font-bold text-center font-semibold">
               My Hosted Bikes
             </h2>
             <button
               onClick={() => setShowForm(true)}
-              className="bg-green-600 text-white px-6 py-2  rounded hover:bg-green-700"
+              className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700"
             >
               Host a Bike
             </button>
@@ -196,10 +247,11 @@ const HostBikePage = () => {
               <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 {hostedBikes.map((bike) => (
                   <BikeCard
-                    key={bike.id}
+                    key={bike.bikeID}
                     bike={bike}
                     host={true}
                     onDelete={() => handleDeleteBike(bike.bikeID)}
+                    onUpdateBike={handleUpdateBike} // pass the update function here
                   />
                 ))}
               </div>
@@ -210,7 +262,7 @@ const HostBikePage = () => {
             <>
               <div
                 onClick={() => setShowForm(false)}
-                className="fixed inset-0  bg-white/10 backdrop-blur-sm z-40"
+                className="fixed inset-0 bg-white/10 backdrop-blur-sm z-40"
                 aria-hidden="true"
               />
               <div className="fixed inset-0 flex items-center justify-center z-50 px-4">
@@ -241,7 +293,6 @@ const HostBikePage = () => {
                     )}
                   </div>
 
-                  {/* Type */}
                   <div>
                     <select
                       name="type"
@@ -262,7 +313,6 @@ const HostBikePage = () => {
                     )}
                   </div>
 
-                  {/* Address */}
                   <div>
                     <textarea
                       name="address"
@@ -278,7 +328,6 @@ const HostBikePage = () => {
                     )}
                   </div>
 
-                  {/* Rental Price */}
                   <div>
                     <input
                       type="number"
@@ -297,7 +346,6 @@ const HostBikePage = () => {
                     )}
                   </div>
 
-                  {/* Availability Status */}
                   <div>
                     <select
                       name="availabilityStatus"
@@ -310,7 +358,6 @@ const HostBikePage = () => {
                     </select>
                   </div>
 
-                  {/* Image Upload */}
                   <div>
                     <label
                       htmlFor="bikeImage"
@@ -332,7 +379,6 @@ const HostBikePage = () => {
                     )}
                   </div>
 
-                  {/* Preview */}
                   {bikeData.previewUrl && (
                     <img
                       src={bikeData.previewUrl}
@@ -341,7 +387,6 @@ const HostBikePage = () => {
                     />
                   )}
 
-                  {/* Buttons */}
                   <div className="flex gap-4">
                     <button
                       type="submit"

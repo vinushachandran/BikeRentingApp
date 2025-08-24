@@ -1,14 +1,19 @@
-﻿using System.Security.Cryptography;
+﻿using Microsoft.AspNetCore.Identity;
+using System.Security.Cryptography;
 using System.Text;
 
 public static class PasswordHelper
 {
     public static string HashPassword(string password)
     {
-        using (SHA256 sha = SHA256.Create())
-        {
-            byte[] bytes = sha.ComputeHash(Encoding.UTF8.GetBytes(password));
-            return Convert.ToBase64String(bytes);
-        }
+        var hasher=new PasswordHasher<object>();
+        return hasher.HashPassword(null!,password);
+    }
+
+    public static bool VerifyPassword(string password, string storedHash)
+    {
+        var hasher= new PasswordHasher<object>();  
+        var result=hasher.VerifyHashedPassword(null!,storedHash,password);
+        return result == PasswordVerificationResult.Success || result == PasswordVerificationResult.SuccessRehashNeeded;
     }
 }
