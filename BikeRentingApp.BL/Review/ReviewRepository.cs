@@ -1,8 +1,6 @@
 ﻿using BikeRentingApp.Data;
 using BikeRentingApp.Model;
 using BTBS.ViewModel.RepositoryResponse;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace BikeRentingApp.BL
 {
@@ -80,6 +78,29 @@ namespace BikeRentingApp.BL
             {
                 response.Success = false;
                 response.Message.Add($"Error adding review: {ex.InnerException?.Message ?? ex.Message}");
+            }
+            return response;
+        }
+
+        public RepositoryResponse<IEnumerable<ReviewBO>> GetReviewByBikeId(int id)
+        {
+            var response = new RepositoryResponse<IEnumerable<ReviewBO>>();
+            try
+            {
+                var review = _context.Reviews.ToList().Where(s => s.BikeID == id);
+                if (review == null)
+                {
+                    response.Success = false;
+                    response.Message.Add("Review not found.");
+                    return response;
+                }
+                response.Data = review;
+                response.Message.Add("Review fetched successfully.");
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message.Add($"Error fetching review: {ex.Message}");
             }
             return response;
         }

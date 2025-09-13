@@ -38,5 +38,12 @@ namespace BikeRentingApp.API.Controllers
             var response = _repo.AddReview(review);
             return response.Success ? Ok(response) : BadRequest(response);
         }
+
+        [HttpGet("bike/{id}")]
+        public IActionResult GetReviewByBikeId(int id)
+        {
+            var response = _repo.GetReviewByBikeId(id);
+            return response.Success ? Ok(response) : NotFound(response);
+        }
     }
 }

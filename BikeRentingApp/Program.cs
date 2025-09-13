@@ -1,4 +1,5 @@
 using BikeRentingApp.BL;
+using BikeRentingApp.BL.Report;
 using BikeRentingApp.BL.User;
 using BikeRentingApp.Data;
 using Microsoft.EntityFrameworkCore;
@@ -27,6 +28,7 @@ builder.Services.AddScoped<BikeRepository>();
 builder.Services.AddScoped<ReviewRepository>();
 builder.Services.AddScoped<BookingRepository>();
 builder.Services.AddScoped<UserRepository>();
+builder.Services.AddScoped<ReportRepository>();
 
 var app = builder.Build();
 

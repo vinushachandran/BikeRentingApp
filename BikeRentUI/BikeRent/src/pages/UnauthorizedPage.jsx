@@ -13,7 +13,7 @@ const UnauthorizedPage = () => {
       </p>
       <button
         className="p-2 m-2 bg-blue-700 text-white rounded-lg"
-        onClick={() => handleNavigation("/")}
+        onClick={() => handleNavigation("/login")}
       >
         Back to home
       </button>

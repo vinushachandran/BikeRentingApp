@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 import axios from "axios";
 
@@ -11,10 +11,14 @@ const BikeCard = ({
   refreshRentBike,
   onUpdateBike,
 }) => {
-  // Rent modal state
+  // Get logged-in user
+  const user = JSON.parse(localStorage.getItem("user"));
+
+  // Rent modal state (auto-fill name)
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
-    name: "",
+    name: user?.username || user?.firstName || "",
+    depositAmount: "",
     startDate: "",
     days: "",
   });
@@ -37,8 +41,6 @@ const BikeCard = ({
     previewUrl: null,
   });
 
-  const user = JSON.parse(localStorage.getItem("user"));
-
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -53,11 +55,26 @@ const BikeCard = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Confirmation popup
+    const result = await Swal.fire({
+      title: "Confirm Booking",
+      text: `Are you sure you want to book "${bike.bikeNumber}" for ${formData.days} day(s)?`,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Yes, Book it!",
+      cancelButtonText: "Cancel",
+    });
+
+    if (!result.isConfirmed) {
+      return; // Stop if canceled
+    }
+
     const startDateISO = new Date(formData.startDate).toISOString();
     const bookingData = {
       customerID: user?.userId,
       bikeID: bike.bikeID,
       startDate: startDateISO,
+      depositAmount: parseFloat(formData.depositAmount),
       endDate: calculateEndDate(formData.startDate, formData.days),
       status: "Pending",
     };
@@ -69,30 +86,50 @@ const BikeCard = ({
         { headers: { "Content-Type": "application/json" } }
       );
 
-      if (response.data.success) {
+      if (response.data.success === true) {
+        console.log("✅ Booking successful:", {
+          bookingData,
+          serverResponse: response.data,
+        });
         Swal.fire({
           icon: "success",
           title: "Booking Confirmed!",
           text: `Thank you, ${formData.name}! You booked "${bike.bikeNumber}" for ${formData.days} day(s).`,
         });
-        setFormData({ name: "", startDate: "", days: "" });
+        setFormData({
+          name: user?.username || user?.firstName || "",
+          startDate: "",
+          days: "",
+          depositAmount: "",
+        });
         refreshRentBike();
-        refresh();
         setShowModal(false);
       } else {
+        console.warn("❌ Booking failed:", response.data);
+
         Swal.fire({
           icon: "error",
           title: "Booking Failed",
           text: response.data.message || "Something went wrong.",
         });
       }
-    } catch (error) {
-      console.error("Booking error:", error.response?.data?.message || error);
-      Swal.fire({
-        icon: "error",
-        title: "Booking Error",
-        text: "Booking failed. " + (error.response?.data?.message || ""),
-      });
+    } catch (err) {
+      if (err.response) {
+        // Server responded but with non-2xx
+        console.error(
+          "🚨 API responded with error:",
+          err.response.status,
+          err.response.data
+        );
+      } else if (err.request) {
+        // No response from server
+        console.error("🚨 No response received:", err.request);
+      } else {
+        // Something else
+        console.error("🚨 Request setup error:", err.message);
+      }
+
+      Swal.fire("Error", "Failed to process booking.", "error");
     }
   };
 
@@ -121,7 +158,6 @@ const BikeCard = ({
       if (response.data.success) {
         Swal.fire("Success", "Rental extended successfully!", "success");
         setShowExtendModal(false);
-        refresh();
         refreshRentBike();
       } else {
         Swal.fire(
@@ -242,6 +278,54 @@ const BikeCard = ({
     }
   };
 
+  // Reviews modal state
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviews, setReviews] = useState([]);
+  const [loadingReviews, setLoadingReviews] = useState(false);
+
+  const [users, setUsers] = useState([]);
+
+  // Fetch all users once (call this in useEffect when component mounts)
+  const fetchUsers = async () => {
+    try {
+      const response = await axios.get("https://localhost:7176/api/User");
+      if (response.data.success) {
+        setUsers(response.data.data);
+      }
+    } catch (error) {
+      console.error("Caught error:", error.message);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers(); // fetch all users once
+  }, []);
+
+  // Fetch reviews and attach customer names
+  const fetchReviews = async (bikeID) => {
+    try {
+      setLoadingReviews(true);
+      const response = await axios.get(
+        `https://localhost:7176/api/Review/bike/${bikeID}`
+      );
+
+      const reviewsData = response.data.data || [];
+
+      // Map customerID to user name
+      const reviewsWithNames = reviewsData.map((review) => {
+        const user = users.find((u) => u.userId === review.customerID);
+        return { ...review, customerName: user ? user.username : "Anonymous" };
+      });
+
+      setReviews(reviewsWithNames);
+    } catch (err) {
+      console.error("🚨 Failed to fetch reviews:", err);
+      Swal.fire("Error", "Unable to load reviews.", "error");
+    } finally {
+      setLoadingReviews(false);
+    }
+  };
+
   return (
     <>
       <div className="flex flex-col justify-between border border-gray-300 shadow rounded-xl p-4 w-full max-w-full bg-white hover:shadow-lg transition min-h-[150px]">
@@ -311,15 +395,26 @@ const BikeCard = ({
               {!returnMode && (
                 <>
                   {!bike.booked ? (
-                    <button
-                      className="bg-blue-600 text-white px-4 py-2 rounded w-full"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowModal(true);
-                      }}
-                    >
-                      Rent Now
-                    </button>
+                    <>
+                      <button
+                        className="bg-blue-600 text-white px-4 py-2 rounded w-full"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowModal(true);
+                        }}
+                      >
+                        Rent Now
+                      </button>
+                      <button
+                        className="bg-green-100 text-black px-4 py-2 rounded w-full"
+                        onClick={() => {
+                          fetchReviews(bike.bikeID);
+                          setShowReviewModal(true);
+                        }}
+                      >
+                        View Reviews & Ratings
+                      </button>
+                    </>
                   ) : (
                     <button className="bg-green-600 text-white px-4 py-2 rounded w-full">
                       Bike Booked
@@ -446,6 +541,17 @@ const BikeCard = ({
                 min={1}
                 className="w-full border rounded px-3 py-2"
               />
+              <input
+                type="number"
+                name="depositAmount"
+                placeholder="Deposit Amount"
+                value={formData.depositAmount}
+                onChange={handleInputChange}
+                required
+                min={1}
+                step="0.01"
+                className="w-full border rounded px-3 py-2"
+              />
               <div className="flex justify-end gap-2">
                 <button
                   type="button"
@@ -462,6 +568,62 @@ const BikeCard = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Reviews & Ratings Modal */}
+      {showReviewModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
+            {/* Header */}
+            <div className="flex justify-between items-center px-6 py-4 bg-gray-100 border-b sticky top-0 z-10">
+              <h2 className="text-xl font-bold text-gray-800">
+                Reviews & Ratings for "{bike.bikeNumber}"
+              </h2>
+              <button
+                className="text-gray-400 hover:text-red-500 text-2xl font-bold"
+                onClick={() => setShowReviewModal(false)}
+              >
+                &times;
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 overflow-y-auto space-y-4 flex-1">
+              {loadingReviews ? (
+                <p className="text-gray-500 text-center py-6">
+                  Loading reviews...
+                </p>
+              ) : reviews.length > 0 ? (
+                reviews.map((review, index) => (
+                  <div
+                    key={index}
+                    className="flex flex-col sm:flex-row items-start sm:items-center gap-4 border rounded-xl shadow-sm p-4 bg-gray-50 hover:bg-gray-100 transition"
+                  >
+                    <div className="flex-shrink-0">
+                      <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center text-gray-700 font-semibold">
+                        {review.customerName?.[0] || "?"}
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm text-gray-500">
+                        – {review.customerName}
+                      </p>
+                      <p className="mt-1 font-semibold text-yellow-500">
+                        {"⭐".repeat(review.rating)}{" "}
+                        <span className="text-gray-400">/ 5</span>
+                      </p>
+                      <p className="text-gray-700 mt-2">{review.comment}</p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-500 text-center py-6">
+                  No reviews yet.
+                </p>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -484,7 +646,7 @@ const BikeCard = ({
                 value={updateData.hostID}
                 required
                 className="w-full border rounded px-3 py-2"
-                placeholder="Bike Number"
+                placeholder="Host ID"
               />
               <input
                 type="text"
@@ -532,24 +694,20 @@ const BikeCard = ({
                 <option value="true">Available</option>
                 <option value="false">Not Available</option>
               </select>
-              <label className="block">
-                Select New Image (optional):
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="mt-1"
-                />
-              </label>
-
+              <input
+                type="file"
+                name="image"
+                onChange={handleImageChange}
+                accept="image/*"
+                className="w-full border rounded px-3 py-2"
+              />
               {updateData.previewUrl && (
                 <img
                   src={updateData.previewUrl}
                   alt="Preview"
-                  className="w-full h-40 object-cover rounded-md mt-2"
+                  className="w-[150px] h-[150px] object-cover rounded-md mt-2"
                 />
               )}
-
               <div className="flex justify-end gap-2">
                 <button
                   type="button"

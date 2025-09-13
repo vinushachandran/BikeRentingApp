@@ -4,16 +4,33 @@ import BikeCard from "../components/BikeCard";
 import ReturnBikeModal from "../components/ReturnBikeModal";
 import axios from "axios";
 import Swal from "sweetalert2";
+import ReportModal from "../components/common/ReportModal";
 
 const RentBikePage = () => {
   const [selectedLocation, setSelectedLocation] = useState("All");
   const [rentedBikes, setRentedBikes] = useState([]);
+  const [hosts, setHosts] = useState([]);
   const [returnMode, setReturnMode] = useState(false);
   const [selectedReturnBike, setSelectedReturnBike] = useState(null);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   const [bikes, setBikes] = useState([]);
 
   const user = JSON.parse(localStorage.getItem("user"));
+
+  const fetchHosts = async () => {
+    try {
+      const response = await axios.get("https://localhost:7176/api/User");
+      if (response.data.success) {
+        const onlyUsers = response.data.data.filter(
+          (u) => u.role && u.role.toLowerCase() === "user"
+        );
+        setHosts(onlyUsers);
+      }
+    } catch (error) {
+      console.error("Caught error:", error.message);
+    }
+  };
 
   const fetchBikes = async () => {
     try {
@@ -87,6 +104,7 @@ const RentBikePage = () => {
   useEffect(() => {
     fetchRentedBikes();
     fetchBikes();
+    fetchHosts();
   }, []);
 
   const filteredBikes =
@@ -291,12 +309,21 @@ const RentBikePage = () => {
               <div></div>
             </>
           )}
-          <button
-            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-            onClick={handleReturnToggle}
-          >
-            {returnMode ? "Back to Rent" : "Return Bike"}
-          </button>
+          <div className="flex gap-2">
+            <button
+              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+              onClick={() => setShowReportModal(true)}
+            >
+              Report an issue
+            </button>
+
+            <button
+              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+              onClick={handleReturnToggle}
+            >
+              {returnMode ? "Back to Rent" : "Return Bike"}
+            </button>
+          </div>
         </div>
 
         {bikesToDisplay.length === 0 ? (
@@ -306,7 +333,7 @@ const RentBikePage = () => {
               : "No bikes available."}
           </div>
         ) : (
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {bikesToDisplay.map((bike) => (
               <BikeCard
                 key={bike.bikeID}
@@ -320,6 +347,15 @@ const RentBikePage = () => {
           </div>
         )}
       </div>
+
+      {showReportModal && (
+        <ReportModal
+          onClose={() => setShowReportModal(false)}
+          user={hosts}
+          rentedBikes={rentedBikes}
+          bikes={bikes}
+        />
+      )}
 
       {selectedReturnBike && (
         <ReturnBikeModal

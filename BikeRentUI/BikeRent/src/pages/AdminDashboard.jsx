@@ -14,6 +14,8 @@ const MySwal = withReactContent(Swal);
 
 const AdminDashboard = () => {
   const [users, setUsers] = useState([]);
+  const [booking, setBooking] = useState([]);
+  const [reports, setReports] = useState([]);
   const [activeTab, setActiveTab] = useState("Users");
   const [bikes, setBikes] = useState([]);
   const [reviews, setReviews] = useState([]);
@@ -27,6 +29,8 @@ const AdminDashboard = () => {
     fetchUsers();
     fetchBikes();
     fetchReviews();
+    fetchBookings();
+    fetchReports();
   }, []);
 
   useEffect(() => {
@@ -55,6 +59,29 @@ const AdminDashboard = () => {
       setReviews(allReviews);
     }
   }, [selectedUserIdForReview, allReviews]);
+
+  const fetchReports = async () => {
+    try {
+      const response = await axios.get(
+        "https://localhost:7176/api/Report/getAllReports"
+      );
+      if (response.data.success) {
+        setReports(response.data.data);
+      }
+    } catch (error) {
+      console.error("Caught error:", error.message);
+    }
+  };
+  const fetchBookings = async () => {
+    try {
+      const response = await axios.get("https://localhost:7176/api/Booking");
+      if (response.data.success) {
+        setBooking(response.data.data);
+      }
+    } catch (error) {
+      console.error("Caught error:", error.message);
+    }
+  };
 
   const fetchUsers = async () => {
     try {
@@ -400,6 +427,175 @@ const AdminDashboard = () => {
 
   const renderTable = () => {
     switch (activeTab) {
+      case "Reports":
+        return (
+          <>
+            {" "}
+            <div className="bg-white p-6 rounded-xl shadow-md">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-800">Users</h2>
+                <div className="flex gap-3">
+                  {/* <button
+                    className="bg-blue-700 text-white px-4 py-2 rounded-md"
+                    onClick={openAddUserModal}
+                  >
+                    Add User
+                  </button> */}
+                  <button
+                    onClick={() => downloadPDF(reports, "Booking_Report")}
+                    className="bg-amber-900 text-white px-4 py-2 rounded-lg hover:bg-amber-800 flex items-center gap-2 transition-colors duration-300"
+                  >
+                    <FaDownload className="text-lg" />
+                    <span className="hidden sm:inline">Download PDF</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm text-left text-gray-600">
+                  <thead className="text-md uppercase bg-green-600 text-white">
+                    <tr>
+                      <th className="px-6 py-4 font-semibold tracking-wider">
+                        Host
+                      </th>
+                      <th className="px-6 py-4 font-semibold tracking-wider">
+                        Bike
+                      </th>
+                      <th className="px-6 py-4 font-semibold tracking-wider">
+                        Report Message
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {reports.map((report, index) => {
+                      const customer = users.find(
+                        (u) => u.userId === report.hostID
+                      );
+                      const bike = bikes.find(
+                        (b) => b.bikeID === report.bikeID
+                      );
+
+                      return (
+                        <tr
+                          key={report.id}
+                          className={
+                            index % 2 === 0
+                              ? "bg-white"
+                              : "bg-gray-50 hover:bg-gray-100 transition"
+                          }
+                        >
+                          <td className="px-6 py-4">
+                            {customer ? customer.username : "-"}
+                          </td>
+                          <td className="px-6 py-4">
+                            {bike ? bike.bikeNumber : "-"}
+                          </td>
+
+                          <td className="px-6 py-4">{report.reportMessage}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        );
+
+      case "Bookings":
+        return (
+          <>
+            {" "}
+            <div className="bg-white p-6 rounded-xl shadow-md">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-800">Users</h2>
+                <div className="flex gap-3">
+                  {/* <button
+                    className="bg-blue-700 text-white px-4 py-2 rounded-md"
+                    onClick={openAddUserModal}
+                  >
+                    Add User
+                  </button> */}
+                  <button
+                    onClick={() => downloadPDF(booking, "Booking_Report")}
+                    className="bg-amber-900 text-white px-4 py-2 rounded-lg hover:bg-amber-800 flex items-center gap-2 transition-colors duration-300"
+                  >
+                    <FaDownload className="text-lg" />
+                    <span className="hidden sm:inline">Download PDF</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm text-left text-gray-600">
+                  <thead className="text-md uppercase bg-green-600 text-white">
+                    <tr>
+                      <th className="px-6 py-4 font-semibold tracking-wider">
+                        Customer
+                      </th>
+                      <th className="px-6 py-4 font-semibold tracking-wider">
+                        Bike
+                      </th>
+                      <th className="px-6 py-4 font-semibold tracking-wider">
+                        Start Date
+                      </th>
+                      <th className="px-6 py-4 font-semibold tracking-wider text-center">
+                        End Date
+                      </th>
+                      <th className="px-6 py-4 font-semibold tracking-wider text-center">
+                        Deposite Amount
+                      </th>
+                      <th className="px-6 py-4 font-semibold tracking-wider text-center">
+                        Status
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {booking.map((bookings, index) => {
+                      const customer = users.find(
+                        (u) => u.userId === bookings.customerID
+                      );
+                      const bike = bikes.find(
+                        (b) => b.bikeID === bookings.bikeID
+                      );
+
+                      const startDate = new Date(
+                        bookings.startDate
+                      ).toLocaleDateString();
+                      const endDate = new Date(
+                        bookings.endDate
+                      ).toLocaleDateString();
+
+                      return (
+                        <tr
+                          key={bookings.id}
+                          className={
+                            index % 2 === 0
+                              ? "bg-white"
+                              : "bg-gray-50 hover:bg-gray-100 transition"
+                          }
+                        >
+                          <td className="px-6 py-4">
+                            {customer ? customer.username : "Unknown User"}
+                          </td>
+                          <td className="px-6 py-4">
+                            {bike ? bike.bikeNumber : "Unknown Bike"}
+                          </td>
+                          <td className="px-6 py-4">{startDate}</td>
+                          <td className="px-6 py-4">{endDate}</td>
+                          <td className="px-6 py-4">
+                            Rs.{bookings.depositAmount}
+                          </td>
+                          <td className="px-6 py-4">{bookings.status}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        );
       case "Users":
         return (
           <>
@@ -874,7 +1070,7 @@ const AdminDashboard = () => {
       <div className="min-h-screen p-6 max-w-6xl mx-auto">
         {/* Tabs */}
         <div className="flex space-x-4 justify-center mb-6">
-          {["Users", "Bikes", "Reviews"].map((tab) => (
+          {["Users", "Bikes", "Bookings", "Reviews", "Reports"].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}

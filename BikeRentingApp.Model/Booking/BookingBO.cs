@@ -1,5 +1,4 @@
-﻿using System;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace BikeRentingApp.Model
 {
@@ -19,6 +18,10 @@ namespace BikeRentingApp.Model
         [Required(ErrorMessage = "Start Date is required")]
         [Display(Name = "Start Date")]
         public DateTime StartDate { get; set; }
+
+        [Required(ErrorMessage = "DepositeAmount is required")]
+        [Display(Name = "DepositeAmount")]
+        public decimal DepositAmount { get; set; }
 
         [Required(ErrorMessage = "End Date is required")]
         [Display(Name = "End Date")]

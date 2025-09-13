@@ -1,4 +1,5 @@
 ﻿using BikeRentingApp.Model;
+using BikeRentingApp.Model.Report;
 using BikeRentingApp.Model.User;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,6 +16,8 @@ namespace BikeRentingApp.Data
         public DbSet<BookingBO> Booking { get; set; }
 
         public DbSet<ReviewBO> Reviews { get; set; }
+
+        public DbSet<ReportBO> Report { get; set; }
 
 
     }

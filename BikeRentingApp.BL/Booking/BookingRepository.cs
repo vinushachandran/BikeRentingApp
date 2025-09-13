@@ -105,6 +105,7 @@ namespace BikeRentingApp.BL
                     BikeID = booking.BikeID,
                     StartDate = booking.StartDate,
                     EndDate = booking.EndDate,
+                    DepositAmount = booking.DepositAmount
                     //Status = booking.Status
                 });
 

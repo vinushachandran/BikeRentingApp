@@ -20,8 +20,4 @@
     <ProjectReference Include="..\BikeRentingApp.Data\BikeRentingApp.Data.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Controllers\" />
-  </ItemGroup>
-
 </Project>

@@ -124,7 +124,7 @@ namespace BikeRentingApp.BL.User
                 {
                     imageData = existingUser.LicenseImage;
                 }
-                                
+
                 if (!string.IsNullOrWhiteSpace(user.Password))
                 {
                     existingUser.PasswordHash = PasswordHelper.HashPassword(user.Password);
